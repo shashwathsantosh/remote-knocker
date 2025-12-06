@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Remote Knocker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        /* --- THIS IS YOUR CSS (DESIGN) --- */
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f4f9; padding: 50px; }
+        h1 { color: #333; }
+        #btn {
+            padding: 25px 50px; font-size: 24px; border: none; border-radius: 50px;
+            background: #4CAF50; color: white; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+        #btn:active { transform: scale(0.95); }
+        #btn:disabled { background: #ccc; cursor: not-allowed; }
+        #status { margin-top: 30px; color: #666; font-weight: bold; min-height: 30px; }
+        .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid #666; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    
+    <!-- --- THIS IS YOUR LAYOUT --- -->
+    <h1>🪵 Remote Wood Knocker</h1>
+    <button id="btn" onclick="sendKnock()">KNOCK ON WOOD</button>
+    <div id="status">Ready.</div>
+
+    <!-- --- THIS IS THE JAVASCRIPT LOGIC --- -->
+    <script>
+        async function sendKnock() {
+            const btn = document.getElementById('btn');
+            const status = document.getElementById('status');
+            
+            btn.disabled = true;
+            status.innerHTML = 'Queuing knock... <div class="spinner"></div>';
+            
+            try {
+                // 1. Ask server to queue a knock
+                const response = await fetch('/api/queue-knock', { method: 'POST' });
+                const data = await response.json();
+                const jobId = data.job_id;
+
+                // 2. Check status every 1 second
+                const interval = setInterval(async () => {
+                    const check = await fetch(`/api/job-status/${jobId}`);
+                    const jobData = await check.json();
+                    
+                    if (jobData.status === 'assigned') {
+                        status.innerHTML = `Dispatched to device <b>${jobData.worker}</b>... <div class="spinner"></div>`;
+                    } else if (jobData.status === 'completed') {
+                        status.innerHTML = `✅ Knock Delivered by <b>${jobData.worker}</b>!`;
+                        clearInterval(interval);
+                        btn.disabled = false;
+                        setTimeout(() => status.innerHTML = "Ready.", 3000);
+                    }
+                }, 1000);
+            } catch (error) {
+                status.innerHTML = "Error connecting to server.";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
