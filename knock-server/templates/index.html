@@ -1,65 +1,272 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>Remote Knocker</title>
+    <title>KNOCK</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        /* --- THIS IS YOUR CSS (DESIGN) --- */
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f4f9; padding: 50px; }
-        h1 { color: #333; }
-        #btn {
-            padding: 25px 50px; font-size: 24px; border: none; border-radius: 50px;
-            background: #4CAF50; color: white; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: all 0.2s;
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'JetBrains Mono', monospace;
+            background: #fff;
+            color: #000;
+            user-select: none;
         }
-        #btn:active { transform: scale(0.95); }
-        #btn:disabled { background: #ccc; cursor: not-allowed; }
-        #status { margin-top: 30px; color: #666; font-weight: bold; min-height: 30px; }
-        .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid #666; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #knockBtn {
+            position: relative;
+            background: transparent;
+            color: #000;
+            border: 2px solid #000;
+            padding: 15px 30px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            overflow: hidden;
+            min-width: 240px; /* Made slightly wider to fit status text */
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        /* The Progress Bar Background */
+        #knockBtn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: #000;
+            z-index: 0;
+            transition: width 0s;
+        }
+
+        /* The Button Text */
+        #knockBtn span {
+            position: relative;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        #knockBtn:not(.loading):not(.success):hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        /* Loading State - Slow fill */
+        #knockBtn.loading {
+            color: #fff;
+            border-color: #000;
+            pointer-events: none;
+        }
+
+        #knockBtn.loading::after {
+            width: 100%;
+            /* We simulate a fill. If real knock is faster, JS will snap it to 100% */
+            transition: width 10s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* Success State - Instant fill */
+        #knockBtn.success {
+            color: #fff;
+            border-color: #000;
+            pointer-events: none;
+        }
+
+        #knockBtn.success::after {
+            width: 100%;
+            transition: width 0.2s ease-out; /* Snap to full */
+        }
+
+        .online-count {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+            margin-top: 15px;
+            font-weight: 500;
+            pointer-events: none;
+        }
+
+        .learn-btn {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            font-size: 12px;
+            font-family: inherit;
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-decoration: underline;
+            color: #666;
+            z-index: 10;
+        }
+
+        .learn-btn:hover {
+            color: #000;
+        }
+
+        /* Slide Pane */
+        .panel-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+
+        .panel-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .side-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 320px;
+            height: 100%;
+            background: #000;
+            border-left: 1px solid #333;
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 101;
+            padding: 60px 40px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            color: #fff;
+        }
+
+        .side-panel.active {
+            transform: translateX(0);
+        }
+
+        .close-icon {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+            color: #fff;
+        }
     </style>
 </head>
-<body>
-    
-    <!-- --- THIS IS YOUR LAYOUT --- -->
-    <h1>🪵 Remote Wood Knocker</h1>
-    <button id="btn" onclick="sendKnock()">KNOCK ON WOOD</button>
-    <div id="status">Ready.</div>
 
-    <!-- --- THIS IS THE JAVASCRIPT LOGIC --- -->
+<body>
+
+    <button class="learn-btn" id="learnToggle">learn more</button>
+
+    <div class="panel-backdrop" id="backdrop"></div>
+    <div class="side-panel" id="panel">
+        <div class="close-icon" id="closeBtn">×</div>
+        <p style="font-size: 13px; line-height: 1.6; color: #fff; margin: 0;">
+            When you click the button, a small device knocks on a piece of wood somewhere else. The wood is real, the
+            knock is real, but it happens remotely.
+            <br><br>
+            Multiple pieces of wood are connected to the system in different locations. Each time someone clicks, one of
+            them gets knocked on.
+        </p>
+    </div>
+
+    <div style="position: relative;">
+        <button id="knockBtn"><span>knock on wood</span></button>
+        <!-- Data passed from Python is injected here -->
+        <div class="online-count">{{ online_count }} devices online</div>
+    </div>
+
     <script>
-        async function sendKnock() {
-            const btn = document.getElementById('btn');
-            const status = document.getElementById('status');
-            
-            btn.disabled = true;
-            status.innerHTML = 'Queuing knock... <div class="spinner"></div>';
-            
+        // Main Button Logic
+        const btn = document.getElementById('knockBtn');
+        const label = btn.querySelector('span');
+        
+        // Helper to reset button
+        function resetBtn() {
+            btn.classList.remove('success');
+            label.innerText = "knock on wood";
+            // Remove inline style to allow CSS transition reset
+            const after = window.getComputedStyle(btn, '::after');
+        }
+
+        btn.addEventListener('click', async () => {
+            if (btn.classList.contains('loading') || btn.classList.contains('success')) return;
+
+            // 1. UI: Start Loading
+            btn.classList.add('loading');
+            label.innerText = "queuing...";
+
             try {
-                // 1. Ask server to queue a knock
-                const response = await fetch('/api/queue-knock', { method: 'POST' });
-                const data = await response.json();
+                // 2. API: Request Knock
+                const resp = await fetch('/api/queue-knock', { method: 'POST' });
+                const data = await resp.json();
                 const jobId = data.job_id;
 
-                // 2. Check status every 1 second
+                label.innerText = "waiting for unit...";
+
+                // 3. API: Poll for completion
                 const interval = setInterval(async () => {
-                    const check = await fetch(`/api/job-status/${jobId}`);
-                    const jobData = await check.json();
-                    
-                    if (jobData.status === 'assigned') {
-                        status.innerHTML = `Dispatched to device <b>${jobData.worker}</b>... <div class="spinner"></div>`;
-                    } else if (jobData.status === 'completed') {
-                        status.innerHTML = `✅ Knock Delivered by <b>${jobData.worker}</b>!`;
+                    const statusResp = await fetch(`/api/job-status/${jobId}`);
+                    const job = await statusResp.json();
+
+                    if (job.status === 'completed') {
                         clearInterval(interval);
-                        btn.disabled = false;
-                        setTimeout(() => status.innerHTML = "Ready.", 3000);
+                        
+                        // 4. UI: Success!
+                        btn.classList.remove('loading');
+                        btn.classList.add('success');
+                        
+                        // Format the MAC address to look like "Unit #A1B2"
+                        const unitId = job.worker ? job.worker.replace(/:/g, '').slice(-4) : "UNKNOWN";
+                        label.innerText = `delivered via unit #${unitId}`;
+
+                        // 5. Reset after 3 seconds
+                        setTimeout(resetBtn, 3000);
                     }
-                }, 1000);
+                    else if (job.status === 'assigned') {
+                         label.innerText = "knocking...";
+                    }
+                }, 1000); // Check every 1 second
+
             } catch (error) {
-                status.innerHTML = "Error connecting to server.";
-                btn.disabled = false;
+                console.error(error);
+                btn.classList.remove('loading');
+                label.innerText = "error connecting";
+                setTimeout(resetBtn, 2000);
             }
+        });
+
+        // Slide Panel Logic
+        const toggle = document.getElementById('learnToggle');
+        const close = document.getElementById('closeBtn');
+        const panel = document.getElementById('panel');
+        const backdrop = document.getElementById('backdrop');
+
+        function togglePanel() {
+            const isActive = panel.classList.contains('active');
+            const action = isActive ? 'remove' : 'add';
+            panel.classList[action]('active');
+            backdrop.classList[action]('active');
         }
+
+        toggle.onclick = togglePanel;
+        close.onclick = togglePanel;
+        backdrop.onclick = togglePanel;
     </script>
 </body>
 </html>
