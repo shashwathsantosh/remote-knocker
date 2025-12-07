@@ -20,8 +20,12 @@ def log_event(message):
 
 @app.route('/')
 def index():
-    # This looks for 'index.html' inside the 'templates' folder
-    return render_template('index.html')
+    # Calculate how many devices are actually online right now
+    now = time.time()
+    online_count = sum(1 for d in devices.values() if (now - d['last_seen']) < 10)
+    
+    # Send this number to the HTML file
+    return render_template('index.html', online_count=online_count)
 
 @app.route('/admin')
 def admin():
