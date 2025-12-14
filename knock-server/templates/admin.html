@@ -3,6 +3,7 @@
 
 <head>
     <title>FLEET CONTROL</title>
+    <!-- Auto refresh every 10s to see progress -->
     <meta http-equiv="refresh" content="10"> 
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
@@ -51,7 +52,7 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
             position: relative;
             transition: border-color 0.3s;
         }
@@ -88,7 +89,7 @@
             font-size: 16px; 
             font-weight: 600;
             color: var(--text-main);
-            margin: 0;
+            margin: 0 0 5px 0;
             letter-spacing: 1px;
         }
 
@@ -97,6 +98,18 @@
             justify-content: space-between;
             align-items: center;
             color: var(--text-sub);
+            font-size: 12px;
+        }
+
+        /* Config Rows (Angle / Burst) */
+        .config-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 5px;
+            padding-top: 8px;
+            border-top: 1px dashed #ddd;
+            color: var(--text-main);
             font-size: 12px;
         }
 
@@ -118,7 +131,7 @@
             border-radius: 0;
         }
 
-        /* Mini Action Button */
+        /* Mini Action Button (Set/Go) */
         .btn-mini {
             background: #fff;
             border: 1px solid #000;
@@ -132,7 +145,7 @@
         }
         .btn-mini:hover { background: #000; color: #fff; }
 
-        /* Main Action Button */
+        /* Big Force Button */
         .btn-force {
             background: transparent;
             color: var(--text-main);
@@ -143,7 +156,7 @@
             font-weight: 600;
             cursor: pointer;
             width: 100%;
-            margin-top: 5px;
+            margin-top: 10px;
             text-transform: uppercase;
             transition: all 0.2s ease;
         }
@@ -226,7 +239,7 @@
             </div>
 
             <!-- Angle Config -->
-            <div class="info-row" style="margin-top:5px; padding-top:10px; border-top:1px dashed #ddd;">
+            <div class="config-row">
                 <span>Hit Angle:</span>
                 <div style="display:flex; gap:5px;">
                     <input type="number" id="angle-{{ mac }}" value="{{ dev.angle }}">
@@ -234,12 +247,11 @@
                 </div>
             </div>
 
-            <!-- NEW: Burst Test Config -->
-            <div class="info-row">
-                <span>Burst Test:</span>
+            <!-- Burst Test Config (Uncapped) -->
+            <div class="config-row">
+                <span>Burst Mode:</span>
                 <div style="display:flex; gap:5px;">
-                    <!-- Default 1, max 20 to prevent overload -->
-                    <input type="number" id="burst-{{ mac }}" value="1" min="1" max="20">
+                    <input type="number" id="burst-{{ mac }}" value="5" min="1">
                     {% if dev.is_online %}
                         <button class="btn-mini" onclick="sendBurst('{{ mac }}')" style="background:var(--text-main); color:#fff;">GO</button>
                     {% else %}
@@ -248,7 +260,12 @@
                 </div>
             </div>
 
-            <!-- Old button removed in favor of the Burst input above which defaults to 1 -->
+            <!-- Main Force Button -->
+            {% if dev.is_online %}
+            <button class="btn-force" onclick="fetch('/api/queue-knock?target={{ mac }}', {method:'POST'})">FORCE TEST</button>
+            {% else %}
+            <button class="btn-force" disabled>FORCE TEST</button>
+            {% endif %}
         </div>
         {% else %}
         <p style="color:#666;">No devices have connected yet.</p>
@@ -282,7 +299,7 @@
 
         function sendBurst(mac) {
             const count = document.getElementById('burst-' + mac).value;
-            if(confirm("Send " + count + " knocks to this device?")) {
+            if(confirm("Queue " + count + " knocks for this device?")) {
                 fetch('/api/queue-knock?target=' + mac + '&count=' + count, {
                     method: 'POST'
                 }).then(res => {
