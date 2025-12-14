@@ -3,7 +3,7 @@
 
 <head>
     <title>FLEET CONTROL</title>
-    <meta http-equiv="refresh" content="5"> 
+    <meta http-equiv="refresh" content="10"> 
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -56,7 +56,7 @@
             transition: border-color 0.3s;
         }
 
-        /* STATUS INDICATOR (The Square in Top Right) */
+        /* STATUS INDICATOR */
         .card::before {
             content: '';
             position: absolute;
@@ -68,14 +68,12 @@
             border: 1px solid #ccc;
         }
 
-        /* Green for Online */
         .card.online::before {
             background: var(--status-green);
             border-color: var(--status-green);
             box-shadow: 0 0 4px var(--status-green); 
         }
         
-        /* Red for Offline */
         .card.offline::before {
             background: var(--status-red);
             border-color: var(--status-red);
@@ -87,7 +85,7 @@
         }
 
         .card-title {
-            font-size: 16px; /* Slightly larger for the ID */
+            font-size: 16px; 
             font-weight: 600;
             color: var(--text-main);
             margin: 0;
@@ -208,7 +206,6 @@
     <div class="device-grid">
         {% for mac, dev in devices.items() %}
         <div class="card {{ 'online' if dev.is_online else 'offline' }}">
-            <!-- CHANGED: Formats MAC to KNOCKER-XXXX -->
             <div class="card-title">KNOCKER-{{ mac.replace(':', '')[-4:] }}</div>
 
             <div class="info-row">
@@ -237,11 +234,21 @@
                 </div>
             </div>
 
-            {% if dev.is_online %}
-            <button class="btn-force" onclick="fetch('/api/queue-knock?target={{ mac }}', {method:'POST'})">FORCE TEST</button>
-            {% else %}
-            <button class="btn-force" disabled>FORCE TEST</button>
-            {% endif %}
+            <!-- NEW: Burst Test Config -->
+            <div class="info-row">
+                <span>Burst Test:</span>
+                <div style="display:flex; gap:5px;">
+                    <!-- Default 1, max 20 to prevent overload -->
+                    <input type="number" id="burst-{{ mac }}" value="1" min="1" max="20">
+                    {% if dev.is_online %}
+                        <button class="btn-mini" onclick="sendBurst('{{ mac }}')" style="background:var(--text-main); color:#fff;">GO</button>
+                    {% else %}
+                        <button class="btn-mini" disabled style="opacity:0.3;">GO</button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Old button removed in favor of the Burst input above which defaults to 1 -->
         </div>
         {% else %}
         <p style="color:#666;">No devices have connected yet.</p>
@@ -271,6 +278,17 @@
             }).then(res => {
                 if(res.ok) alert("Angle updated for " + mac);
             });
+        }
+
+        function sendBurst(mac) {
+            const count = document.getElementById('burst-' + mac).value;
+            if(confirm("Send " + count + " knocks to this device?")) {
+                fetch('/api/queue-knock?target=' + mac + '&count=' + count, {
+                    method: 'POST'
+                }).then(res => {
+                    if(res.ok) location.reload(); // Refresh to see logs
+                });
+            }
         }
     </script>
 </body>
