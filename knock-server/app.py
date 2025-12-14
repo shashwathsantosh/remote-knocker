@@ -15,10 +15,13 @@ system_logs = []
 def log_event(message):
     timestamp = datetime.datetime.now().strftime("%H:%M:%S")
     system_logs.insert(0, f"[{timestamp}] {message}")
-    if len(system_logs) > 50: system_logs.pop()
+    if len(system_logs) > 50: system_logs.pop() # Keep last 50 logs
+
+# --- ROUTES ---
 
 @app.route('/')
 def index():
+    # Calculate online devices (seen in last 10 seconds)
     now = time.time()
     online_count = sum(1 for d in devices.values() if (now - d['last_seen']) < 10)
     return render_template('index.html', online_count=online_count)
@@ -56,14 +59,30 @@ def update_settings():
 @app.route('/api/queue-knock', methods=['POST'])
 def queue_knock():
     target = request.args.get('target') 
-    job_id = str(uuid.uuid4())[:8]
-    job_history[job_id] = { "status": "queued", "worker": None }
-    knock_queue.append({ "id": job_id, "target": target })
+    # Get count for Burst Test, default to 1
+    try:
+        count = int(request.args.get('count', 1))
+    except ValueError:
+        count = 1
+
+    job_ids = []
     
-    if target: log_event(f"Admin queued FORCE knock for {target}")
-    else: log_event(f"User queued knock (Job {job_id})")
+    # Create X jobs based on count
+    for _ in range(count):
+        job_id = str(uuid.uuid4())[:8]
+        job_history[job_id] = { "status": "queued", "worker": None }
+        knock_queue.append({ "id": job_id, "target": target })
+        job_ids.append(job_id)
+    
+    if target: 
+        if count > 1:
+            log_event(f"Admin queued BURST test ({count} knocks) for {target}")
+        else:
+            log_event(f"Admin queued FORCE knock for {target}")
+    else: 
+        log_event(f"User queued knock (Job {job_ids[0]})")
         
-    return jsonify({"status": "queued", "job_id": job_id})
+    return jsonify({"status": "queued", "job_id": job_ids[0], "count": count})
 
 @app.route('/api/job-status/<job_id>')
 def job_status(job_id):
@@ -74,13 +93,20 @@ def confirm_knock():
     data = request.json
     job_id = data.get('job_id')
     mac = data.get('device_id')
+    
     if job_id in job_history:
         job_history[job_id]['status'] = 'completed'
         job_history[job_id]['worker'] = mac
-        if mac in devices: devices[mac]['knocks'] += 1
+        
+        # Increment knock count
+        if mac in devices: 
+            devices[mac]['knocks'] += 1
+            
         log_event(f"✅ Knock executed by {mac}")
+    
     return jsonify({"status": "ok"})
 
+# --- THE HEART OF THE SYSTEM ---
 @app.route('/api/poll')
 def poll():
     mac = request.args.get('id')
@@ -89,7 +115,7 @@ def poll():
     # 1. Update/Create Device Registry
     if mac not in devices:
         log_event(f"✨ New Device Joined: {mac}")
-        # Default angle is 115 if new
+        # Default angle 115
         devices[mac] = { "knocks": 0, "last_seen": time.time(), "status": "online", "angle": 115 }
     else:
         devices[mac]['last_seen'] = time.time()
@@ -103,6 +129,7 @@ def poll():
     # 2. Check for work
     job_to_assign = None
     for i, job in enumerate(knock_queue):
+        # Assign if job has NO target (public) OR matches specific target (private/burst)
         if job['target'] is None or job['target'] == mac:
             job_to_assign = knock_queue.pop(i)
             break
@@ -114,13 +141,14 @@ def poll():
         return jsonify({
             "command": "KNOCK", 
             "job_id": job_to_assign['id'],
-            "angle": current_angle # <--- SENDING ANGLE
+            "angle": current_angle 
         })
     
     return jsonify({
         "command": "SLEEP",
-        "angle": current_angle # <--- SENDING ANGLE EVEN WHILE SLEEPING
+        "angle": current_angle 
     })
 
 if __name__ == '__main__':
+    # Use 0.0.0.0 to be accessible externally
     app.run(host='0.0.0.0', port=5001)
