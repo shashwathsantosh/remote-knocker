@@ -3,7 +3,6 @@
 
 <head>
     <title>FLEET CONTROL</title>
-    <!-- Auto-refresh page every 5 seconds to get latest stats -->
     <meta http-equiv="refresh" content="5"> 
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
@@ -13,6 +12,8 @@
             --text-sub: #666666;
             --border-width: 2px;
             --border-color: #000000;
+            --status-green: #4CAF50;
+            --status-red: #F44336;
         }
 
         body {
@@ -52,23 +53,38 @@
             flex-direction: column;
             gap: 15px;
             position: relative;
+            transition: border-color 0.3s;
         }
 
-        /* Online indicator */
+        /* STATUS INDICATOR (The Square in Top Right) */
         .card::before {
             content: '';
             position: absolute;
             top: 20px;
             right: 20px;
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             background: transparent;
             border: 1px solid #ccc;
         }
 
+        /* Green for Online */
         .card.online::before {
-            background: #000;
-            border-color: #000;
+            background: var(--status-green);
+            border-color: var(--status-green);
+            box-shadow: 0 0 4px var(--status-green); /* Slight Glow */
+        }
+        
+        /* Red for Offline */
+        .card.offline::before {
+            background: var(--status-red);
+            border-color: var(--status-red);
+        }
+        
+        /* Optional: Dim the whole card if offline */
+        .card.offline {
+            border-color: #ddd;
+            opacity: 0.7;
         }
 
         .card-title {
@@ -86,12 +102,10 @@
             font-size: 12px;
         }
 
-        .status-text {
-            font-weight: 600;
-            color: var(--text-main);
-        }
-        
-        .status-offline { color: #ccc; }
+        /* Colored Status Text */
+        .status-text { font-weight: 600; }
+        .status-online { color: var(--status-green); }
+        .status-offline { color: var(--status-red); }
 
         /* Inputs (Styled to match wireframe) */
         input[type="number"] {
@@ -190,14 +204,14 @@
 
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
         <h2>📡 Device Fleet</h2>
-        <!-- Manual Refresh Button -->
         <button onclick="location.reload()" class="btn-mini" style="font-size: 12px; padding: 8px 15px; font-weight: 600;">REFRESH DATA</button>
     </div>
 
     <div class="device-grid">
-        <!-- REAL DATA LOOP STARTS HERE -->
+        <!-- REAL DATA LOOP -->
         {% for mac, dev in devices.items() %}
-        <div class="card {{ 'online' if dev.is_online else '' }}">
+        <!-- Added explicit logic for 'offline' class -->
+        <div class="card {{ 'online' if dev.is_online else 'offline' }}">
             <div class="card-title">{{ mac }}</div>
 
             <div class="info-row">
@@ -217,7 +231,7 @@
                 <span>{{ dev.knocks }}</span>
             </div>
 
-            <!-- Angle Config (Integrated into Wireframe style) -->
+            <!-- Angle Config -->
             <div class="info-row" style="margin-top:5px; padding-top:10px; border-top:1px dashed #ddd;">
                 <span>Hit Angle:</span>
                 <div style="display:flex; gap:5px;">
@@ -244,7 +258,6 @@
         <div id="log-stream">
             {% for log in logs %}
             <div class="log-entry">
-                <!-- The log string from Python already contains timestamp -->
                 <span class="log-msg">{{ log }}</span>
             </div>
             {% endfor %}
@@ -252,7 +265,6 @@
     </div>
 
     <script>
-        // Angle Save Function
         function saveSettings(mac) {
             const angleVal = document.getElementById('angle-' + mac).value;
             fetch('/api/update-settings', {
