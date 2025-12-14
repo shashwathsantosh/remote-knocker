@@ -3,8 +3,8 @@
 
 <head>
     <title>FLEET CONTROL</title>
-    <!-- Auto refresh every 10s to see progress -->
-    <meta http-equiv="refresh" content="10"> 
+    <!-- Auto refresh every 5s -->
+    <meta http-equiv="refresh" content="5"> 
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -101,7 +101,7 @@
             font-size: 12px;
         }
 
-        /* Config Rows (Angle / Burst) */
+        /* Config Rows */
         .config-row {
             display: flex;
             justify-content: space-between;
@@ -170,6 +170,27 @@
             border-color: #ddd;
             color: #ddd;
             cursor: not-allowed;
+        }
+
+        /* STOP Button (Red Style) */
+        .btn-stop {
+            background: transparent;
+            color: var(--status-red);
+            border: var(--border-width) solid var(--status-red);
+            padding: 8px 0;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-stop:hover {
+            background: var(--status-red);
+            color: #fff;
         }
 
         /* Log Stream */
@@ -247,7 +268,7 @@
                 </div>
             </div>
 
-            <!-- Burst Test Config (Uncapped) -->
+            <!-- Burst Test Config -->
             <div class="config-row">
                 <span>Burst Mode:</span>
                 <div style="display:flex; gap:5px;">
@@ -260,11 +281,11 @@
                 </div>
             </div>
 
-            <!-- Main Force Button -->
             {% if dev.is_online %}
-            <button class="btn-force" onclick="fetch('/api/queue-knock?target={{ mac }}', {method:'POST'})">FORCE TEST</button>
+                <button class="btn-force" onclick="fetch('/api/queue-knock?target={{ mac }}', {method:'POST'})">FORCE TEST (1)</button>
+                <button class="btn-stop" onclick="clearQueue('{{ mac }}')">STOP / CLEAR QUEUE</button>
             {% else %}
-            <button class="btn-force" disabled>FORCE TEST</button>
+                <button class="btn-force" disabled>FORCE TEST (1)</button>
             {% endif %}
         </div>
         {% else %}
@@ -303,8 +324,22 @@
                 fetch('/api/queue-knock?target=' + mac + '&count=' + count, {
                     method: 'POST'
                 }).then(res => {
-                    if(res.ok) location.reload(); // Refresh to see logs
+                    if(res.ok) location.reload(); 
                 });
+            }
+        }
+
+        function clearQueue(mac) {
+            if(confirm("STOP and clear all pending knocks for this device?")) {
+                fetch('/api/clear-queue', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ target: mac })
+                }).then(res => res.json())
+                  .then(data => {
+                      alert("Stopped! Cleared " + data.cleared + " pending knocks.");
+                      location.reload();
+                  });
             }
         }
     </script>
