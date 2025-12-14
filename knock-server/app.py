@@ -56,6 +56,24 @@ def update_settings():
             return jsonify({"status": "error"}), 400
     return jsonify({"status": "device not found"}), 404
 
+@app.route('/api/clear-queue', methods=['POST'])
+def clear_queue():
+    data = request.json
+    target_mac = data.get('target')
+    
+    global knock_queue
+    initial_count = len(knock_queue)
+    
+    # Filter: Keep jobs that are NOT for this target
+    knock_queue = [job for job in knock_queue if job['target'] != target_mac]
+    
+    cleared_count = initial_count - len(knock_queue)
+    
+    if cleared_count > 0:
+        log_event(f"🛑 STOP: Admin cleared {cleared_count} pending knocks for {target_mac}")
+    
+    return jsonify({"status": "ok", "cleared": cleared_count})
+
 @app.route('/api/queue-knock', methods=['POST'])
 def queue_knock():
     target = request.args.get('target') 
