@@ -7,6 +7,15 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Silkscreen&display=swap"
         rel="stylesheet">
     <style>
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         body {
             margin: 0;
             height: 100vh;
@@ -90,12 +99,19 @@
             transition: opacity 0.3s;
         }
 
+        @keyframes fillPixel {
+            to {
+                opacity: 1;
+            }
+        }
+
         .loading-pixel {
             width: 6px;
             height: 6px;
             background: #000;
             border-radius: 50%;
             opacity: 0;
+            animation: fillPixel 0s linear forwards;
         }
 
         .center-instruction {
@@ -304,7 +320,7 @@
                     let step = Math.sign(dragAccumulator) * Math.floor(Math.abs(dragAccumulator) / 10);
                     queuedKnocks += step;
                     dragAccumulator -= step * 10;
-                    if (queuedKnocks > 100) queuedKnocks = 100;
+                    if (queuedKnocks > 25) queuedKnocks = 25;
                     if (queuedKnocks < 1) queuedKnocks = 1;
                     cursor.innerText = `x${String(queuedKnocks).padStart(2, '0')}`;
                     if (navigator.vibrate) navigator.vibrate(5);
@@ -319,7 +335,7 @@
                 let delta = e.deltaY;
                 if (delta > 0) queuedKnocks--;
                 else queuedKnocks++;
-                if (queuedKnocks > 100) queuedKnocks = 100;
+                if (queuedKnocks > 25) queuedKnocks = 25;
                 if (queuedKnocks < 1) queuedKnocks = 1;
                 cursor.innerText = `x${String(queuedKnocks).padStart(2, '0')}`;
                 if (navigator.vibrate) navigator.vibrate(5);
@@ -327,10 +343,17 @@
         });
 
         // Synthetic Thud using Web Audio API
+        let globalAudioCtx = null;
         function playThud() {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContext) return;
-            const ctx = new AudioContext();
+            if (!globalAudioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                globalAudioCtx = new AudioContext();
+            }
+            if (globalAudioCtx.state === 'suspended') {
+                globalAudioCtx.resume();
+            }
+            const ctx = globalAudioCtx;
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
 
@@ -361,7 +384,7 @@
             return grid;
         }
 
-        // Handle Knocks (ASYNC for API Call)
+        // Handle Knocks (ASYNC API CALL)
         async function triggerKnock(clientX, clientY) {
             if (navigator.vibrate) navigator.vibrate(50);
             playThud();
@@ -405,7 +428,7 @@
                 for (const pos of pastStamps) {
                     const dx = baseX - pos.x;
                     const dy = baseY - pos.y;
-                    if (Math.sqrt(dx * dx + dy * dy) < 60) {
+                    if (Math.sqrt(dx * dx + dy * dy) < 120) {
                         overlap = true;
                         break;
                     }
@@ -460,18 +483,9 @@
 
             pastStamps[pastStamps.length - 1].el = stamp;
 
-            const maxStamps = isTouch ? 10 : 30;
-            if (pastStamps.length > maxStamps) {
-                const oldest = pastStamps.shift();
-                if (oldest && oldest.el) {
-                    oldest.el.style.opacity = '0';
-                    setTimeout(() => oldest.el.remove(), 500);
-                }
-            }
-
             // Animate pixel loading bar sequentially
             loadingPixels.forEach((px, i) => {
-                setTimeout(() => px.style.opacity = '1', (i / bottomCols) * 2000);
+                px.style.animationDelay = `${(i / bottomCols) * 2}s`;
             });
 
             activeKnocks++;
@@ -482,7 +496,7 @@
             let isResolved = false;
             let finalTargetGridTop = [];
 
-            // Continuous Scramble Loop - runs until API resolves
+            // Continuous Scramble Loop - runs infinitely until API resolves
             const scrambleInterval = setInterval(() => {
                 if (!isResolved) {
                     allPixelsTop.forEach(px => px.style.opacity = Math.random() > 0.5 ? 1 : 0.1);
@@ -496,7 +510,7 @@
                         p.el.style.opacity = p.isOn ? 1 : 0;
                     });
                 }
-            }, 60);
+            }, 120);
 
             // --- REAL API LOGIC ---
             try {
@@ -524,6 +538,16 @@
                             setTimeout(() => loadingContainer.remove(), 300);
                             
                             activeKnocks--;
+
+                            // Clean up oldest stamps (respecting user max logic)
+                            while (pastStamps.length > Math.max(10, activeKnocks)) {
+                                const oldest = pastStamps.shift();
+                                if (oldest && oldest.el) {
+                                    oldest.el.style.opacity = '0';
+                                    setTimeout(() => oldest.el.remove(), 500);
+                                }
+                            }
+
                             if (!isQueueMode && !isHolding) {
                                 if (activeKnocks > 0) cursor.innerText = 'queuing...';
                                 else {
@@ -547,10 +571,22 @@
                 setTimeout(() => loadingContainer.remove(), 300);
                 
                 activeKnocks--;
+
+                while (pastStamps.length > Math.max(10, activeKnocks)) {
+                    const oldest = pastStamps.shift();
+                    if (oldest && oldest.el) {
+                        oldest.el.style.opacity = '0';
+                        setTimeout(() => oldest.el.remove(), 500);
+                    }
+                }
+
                 if (!isQueueMode && !isHolding) {
                     cursor.innerText = '[ ERROR ]';
                     setTimeout(() => {
-                        if (activeKnocks === 0) cursor.innerText = '[ KNOCK ]';
+                        if (activeKnocks === 0) {
+                            cursor.innerText = '[ KNOCK ]';
+                            if (isTouch) cursor.style.opacity = '0';
+                        }
                     }, 2000);
                 }
             }
@@ -588,6 +624,7 @@
                 if (isHolding) {
                     isQueueMode = true;
                     cursor.innerText = `x01`;
+                    if (navigator.vibrate) navigator.vibrate(15);
                 }
             }, 300);
         });
