@@ -4,7 +4,8 @@
 <head>
     <title>KNOCK</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Silkscreen&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Silkscreen&display=swap"
+        rel="stylesheet">
     <style>
         body {
             margin: 0;
@@ -21,13 +22,15 @@
             position: fixed;
             top: 50%;
             left: 50%;
-            font-size: 18px;
+            font-family: 'Silkscreen', cursive;
+            font-size: 16px;
             font-weight: 600;
             pointer-events: none;
             z-index: 9999;
             transform: translate(-50%, -50%);
             white-space: nowrap;
-            transition: left 0.1s, top 0.1s, transform 0.1s;
+            transition: opacity 0.3s;
+            opacity: 0;
         }
 
         #stampsContainer {
@@ -50,11 +53,27 @@
             width: max-content;
         }
 
-        .stamp-row-small { display: grid; grid-template-rows: repeat(5, 1fr); gap: 1px; }
-        .stamp-row-small .stamp-pixel { width: 3px; height: 3px; }
+        .stamp-row-small {
+            display: grid;
+            grid-template-rows: repeat(5, 1fr);
+            gap: 1px;
+        }
 
-        .stamp-row-large { display: grid; grid-template-rows: repeat(5, 1fr); gap: 1px; }
-        .stamp-row-large .stamp-pixel { width: 6px; height: 6px; }
+        .stamp-row-small .stamp-pixel {
+            width: 3px;
+            height: 3px;
+        }
+
+        .stamp-row-large {
+            display: grid;
+            grid-template-rows: repeat(5, 1fr);
+            gap: 1px;
+        }
+
+        .stamp-row-large .stamp-pixel {
+            width: 6px;
+            height: 6px;
+        }
 
         .stamp-pixel {
             background: #000;
@@ -91,7 +110,11 @@
             transition: opacity 0.3s;
         }
 
-        .learn-btn, .close-icon, #backdrop { cursor: pointer; }
+        .learn-btn,
+        .close-icon,
+        #backdrop {
+            cursor: pointer;
+        }
 
         .online-count {
             position: fixed;
@@ -108,7 +131,11 @@
             padding: 0;
         }
 
-        .online-count span { color: #00e000; font-size: 14px; vertical-align: middle; }
+        .online-count span {
+            color: #00e000;
+            font-size: 14px;
+            vertical-align: middle;
+        }
 
         .learn-btn {
             position: absolute;
@@ -124,24 +151,64 @@
             z-index: 10;
             background: rgba(255, 255, 255, 0.8);
         }
-        .learn-btn:hover { color: #000; }
+
+        .learn-btn:hover {
+            color: #000;
+        }
 
         /* Slide Pane */
         .panel-backdrop {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 255, 255, 0.9); opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 100;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 100;
         }
-        .panel-backdrop.active { opacity: 1; pointer-events: auto; }
-        
+
+        .panel-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         .side-panel {
-            position: fixed; top: 0; right: 0; width: 320px; height: 100%;
-            background: #000; border-left: 1px solid #333; transform: translateX(100%);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 101;
-            padding: 60px 40px; box-sizing: border-box; display: flex; align-items: center; color: #fff;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 320px;
+            height: 100%;
+            background: #000;
+            border-left: 1px solid #333;
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 101;
+            padding: 60px 40px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            color: #fff;
         }
-        .side-panel.active { transform: translateX(0); }
-        
-        .close-icon { position: absolute; top: 40px; right: 40px; font-size: 20px; line-height: 1; color: #fff; }
+
+        .side-panel.active {
+            transform: translateX(0);
+        }
+
+        .close-icon {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            cursor: pointer;
+            font-size: 28px;
+            line-height: 1;
+            color: #fff;
+            padding: 20px;
+            margin-top: -20px;
+            margin-right: -20px;
+        }
     </style>
 </head>
 
@@ -153,14 +220,18 @@
     <div class="side-panel" id="panel">
         <div class="close-icon" id="closeBtn">×</div>
         <p style="font-size: 13px; line-height: 1.6; color: #fff; margin: 0;">
-            When you click the button, a small device knocks on a piece of wood somewhere else. The wood is real, the knock is real, but it happens remotely.
+            When you click the button, a small device knocks on a piece of wood somewhere else. The wood is real, the
+            knock is real, but it happens remotely.
             <br><br>
-            Multiple pieces of wood are connected to the system in different locations. Each time someone clicks, one of them gets knocked on.
+            Multiple pieces of wood are connected to the system in different locations. Each time someone clicks, one of
+            them gets knocked on.
         </p>
     </div>
 
     <!-- Data passed from Python is injected here -->
-    <div class="online-count">{{ online_count }} Devices Online <span>●</span></div>
+    <div class="online-count">{{ online_count }} {% if online_count == 1 %}Device{% else %}Devices{% endif %} Online
+        <span>●</span>
+    </div>
 
     <div class="center-instruction" id="centerInst">Tap to send knock</div>
     <div id="stampsContainer"></div>
@@ -168,27 +239,35 @@
 
     <script>
         const font = {
-            '0': ['010', '101', '101', '101', '010'], '1': ['010', '110', '010', '010', '111'], '2': ['110', '001', '010', '100', '111'],
-            '3': ['110', '001', '010', '001', '110'], '4': ['101', '101', '111', '001', '001'], '5': ['111', '100', '110', '001', '110'],
-            '6': ['011', '100', '110', '101', '010'], '7': ['111', '001', '010', '010', '010'], '8': ['010', '101', '010', '101', '010'],
-            '9': ['010', '101', '011', '001', '010'], ':': ['000', '010', '000', '010', '000'], 'A': ['010', '101', '111', '101', '101'],
-            'B': ['110', '101', '110', '101', '110'], 'C': ['011', '100', '100', '100', '011'], 'D': ['110', '101', '101', '101', '110'],
-            'E': ['111', '100', '111', '100', '111'], 'F': ['111', '100', '110', '100', '100'], 'G': ['011', '100', '101', '101', '011'],
-            'H': ['101', '101', '111', '101', '101'], 'I': ['111', '010', '010', '010', '111'], 'J': ['001', '001', '001', '101', '010'],
-            'K': ['101', '110', '100', '110', '101'], 'L': ['100', '100', '100', '100', '111'], 'M': ['101', '111', '101', '101', '101'],
-            'N': ['110', '101', '101', '101', '101'], 'O': ['010', '101', '101', '101', '010'], 'P': ['110', '101', '110', '100', '100'],
-            'Q': ['010', '101', '101', '011', '001'], 'R': ['110', '101', '110', '101', '101'], 'S': ['011', '100', '010', '001', '110'],
-            'T': ['111', '010', '010', '010', '010'], 'U': ['101', '101', '101', '101', '011'], 'V': ['101', '101', '101', '101', '010'],
-            'W': ['101', '101', '101', '111', '101'], 'X': ['101', '101', '010', '101', '101'], 'Y': ['101', '101', '010', '010', '010'],
-            'Z': ['111', '001', '010', '100', '111'], ' ': ['000', '000', '000', '000', '000'], '#': ['010', '111', '010', '111', '010'],
-            '-': ['000', '000', '111', '000', '000']
+            '0': ['010', '101', '101', '101', '010'], '1': ['010', '110', '010', '010', '111'],
+            '2': ['110', '001', '010', '100', '111'], '3': ['110', '001', '010', '001', '110'],
+            '4': ['101', '101', '111', '001', '001'], '5': ['111', '100', '110', '001', '110'],
+            '6': ['011', '100', '110', '101', '010'], '7': ['111', '001', '010', '010', '010'],
+            '8': ['010', '101', '010', '101', '010'], '9': ['010', '101', '011', '001', '010'],
+            ':': ['000', '010', '000', '010', '000'], 'A': ['010', '101', '111', '101', '101'],
+            'B': ['110', '101', '110', '101', '110'], 'C': ['011', '100', '100', '100', '011'],
+            'D': ['110', '101', '101', '101', '110'], 'E': ['111', '100', '111', '100', '111'],
+            'F': ['111', '100', '110', '100', '100'], 'G': ['011', '100', '101', '101', '011'],
+            'H': ['101', '101', '111', '101', '101'], 'I': ['111', '010', '010', '010', '111'],
+            'J': ['001', '001', '001', '101', '010'], 'K': ['101', '110', '100', '110', '101'],
+            'L': ['100', '100', '100', '100', '111'], 'M': ['101', '111', '101', '101', '101'],
+            'N': ['110', '101', '101', '101', '101'], 'O': ['010', '101', '101', '101', '010'],
+            'P': ['110', '101', '110', '100', '100'], 'Q': ['010', '101', '101', '011', '001'],
+            'R': ['110', '101', '110', '101', '101'], 'S': ['011', '100', '010', '001', '110'],
+            'T': ['111', '010', '010', '010', '010'], 'U': ['101', '101', '101', '101', '011'],
+            'V': ['101', '101', '101', '101', '010'], 'W': ['101', '101', '101', '111', '101'],
+            'X': ['101', '101', '010', '101', '101'], 'Y': ['101', '101', '010', '010', '010'],
+            'Z': ['111', '001', '010', '100', '111'], ' ': ['000', '000', '000', '000', '000'],
+            '#': ['010', '111', '010', '111', '010'], '-': ['000', '000', '111', '000', '000']
         };
 
         const cursor = document.getElementById('inkCursor');
         const stampsContainer = document.getElementById('stampsContainer');
+        cursor.innerText = '[ KNOCK ]';
 
         let activeKnocks = 0;
         let cursorMoved = false;
+        let isTouch = false;
         const pastStamps = [];
 
         // Track mouse position
@@ -196,15 +275,15 @@
             if (e.pointerType === 'mouse') {
                 if (!cursorMoved) {
                     cursorMoved = true;
-                    cursor.style.transform = 'translate(15px, 15px)';
-                    cursor.style.transition = 'none';
+                    cursor.style.opacity = '1';
+                    cursor.style.transform = 'translate(20px, 20px)';
                 }
                 cursor.style.left = e.clientX + 'px';
                 cursor.style.top = e.clientY + 'px';
             }
         });
 
-        // Synthetic Thud
+        // Synthetic Thud using Web Audio API
         function playThud() {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             if (!AudioContext) return;
@@ -226,13 +305,12 @@
             osc.stop(ctx.currentTime + 0.2);
         }
 
-        // Helper to convert string to pixel array
+        // Helper to convert string to pixel grid array
         function stringToGrid(str, targetCols) {
             const grid = [];
             for (let r = 0; r < 5; r++) {
                 let row = "";
                 for (let char of str) {
-                    // Fallback to space if char not in font dictionary
                     row += (font[char] || font[' '])[r] + "0";
                 }
                 grid.push(row.slice(0, targetCols));
@@ -242,31 +320,45 @@
 
         // Handle Knocks
         window.addEventListener('pointerdown', async (e) => {
-            // Ignore clicks on UI elements
-            if (e.target.id === 'learnToggle' || e.target.id === 'closeBtn' || e.target.closest('#panel')) return;
+            // Ignore clicks on UI elements like learn more pane
+            if (e.target.id === 'learnToggle' || document.getElementById('panel').classList.contains('active')) return;
 
-            if (!cursorMoved) {
-                cursorMoved = true;
-                cursor.style.transform = 'translate(15px, 15px)';
-                cursor.style.transition = 'none';
+            if (e.pointerType === 'mouse') {
+                if (!cursorMoved) {
+                    cursorMoved = true;
+                    cursor.style.opacity = '1';
+                    cursor.style.transform = 'translate(20px, 20px)';
+                }
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            } else {
+                isTouch = true;
+                cursor.style.opacity = '1';
+                cursor.style.transform = 'translate(-50%, -110px)';
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
             }
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
 
-            if (navigator.vibrate) navigator.vibrate(50);
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
             playThud();
 
-            document.getElementById('centerInst').style.opacity = '0';
+            // Setup fixed dimensions for our strings
+            const topCols = 5 * 4 - 1;   // 19 pixels wide for "#XXXX"
+            const bottomCols = 8 * 4 - 1; // 31 pixels wide for "HH:MM:SS"
 
-            // Fixed widths for strings: "#XXXX" (5 chars) and "HH:MM:SS" (8 chars)
-            const topCols = 5 * 4 - 1;   // 19
-            const bottomCols = 8 * 4 - 1; // 31
-
-            // Get Current Time
             const now = new Date();
             let hours12 = now.getHours() % 12 || 12;
-            const timeStr = `${String(hours12).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            const hours = String(hours12).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const timeStr = `${hours}:${minutes}:${seconds}`;
+
+            // We can pre-calculate the bottom grid because time is known immediately
             const targetGridBottom = stringToGrid(timeStr, bottomCols);
+
+            document.getElementById('centerInst').style.opacity = '0';
 
             // Generate visual stamp container
             const stamp = document.createElement('div');
@@ -280,11 +372,12 @@
             bottomGridContainer.className = 'stamp-row-large';
             bottomGridContainer.style.gridTemplateColumns = `repeat(${bottomCols}, 1fr)`;
 
-            // Positioning Logic
-            const rotation = (Math.random() * 10) - 5;
+            // Slight random misalignment for harsh industrial feel
+            const rotation = (Math.random() * 10) - 5; // -5deg to +5deg
             let baseX = e.clientX + (Math.random() * 6 - 3);
             let baseY = e.clientY + (Math.random() * 6 - 3);
 
+            // Sunflower spiral calculation to prevent absolute overlaps
             let overlap = true;
             let spiralRadius = 0;
             let spiralAngle = 0;
@@ -324,6 +417,7 @@
                 loadingPixels.push(px);
             }
 
+            // Create pixel elements, but don't set their final state yet for the Top Grid
             const allPixelsTop = [];
             for (let i = 0; i < topCols * 5; i++) {
                 const px = document.createElement('div');
@@ -337,6 +431,7 @@
                 const px = document.createElement('div');
                 px.className = 'stamp-pixel';
                 bottomGridContainer.appendChild(px);
+                // Bottom state is known, store it
                 allPixelsBottom.push({ el: px, isOn: targetGridBottom[Math.floor(i / bottomCols)][i % bottomCols] === '1' });
             }
 
@@ -345,26 +440,28 @@
             stamp.appendChild(loadingContainer);
             stampsContainer.appendChild(stamp);
 
-            // Animate pixel loading bar sequentially (visual flair)
+            // Animate pixel loading bar sequentially over 2s
             loadingPixels.forEach((px, i) => {
-                setTimeout(() => { px.style.opacity = '1'; }, (i / bottomCols) * 2000);
+                setTimeout(() => {
+                    px.style.opacity = '1';
+                }, (i / bottomCols) * 2000);
             });
 
-            // Update Global State
+            // Update Cursor Text & State
             activeKnocks++;
-            cursor.innerText = 'queuing...';
+            cursor.innerText = activeKnocks > 1 ? 'queuing...' : 'knocking...';
 
             let isResolved = false;
             let finalTargetGridTop = [];
 
-            // Continuous Scramble Loop (Runs until API returns Success)
+            // Continuous Scramble Loop - runs until API resolves
             const scrambleInterval = setInterval(() => {
                 if (!isResolved) {
-                    // Scramble both while waiting
+                    // Scramble all pixels wildly
                     allPixelsTop.forEach(px => px.style.opacity = Math.random() > 0.5 ? 1 : 0.1);
                     allPixelsBottom.forEach(p => p.el.style.opacity = Math.random() > 0.5 ? 1 : 0.1);
                 } else {
-                    // Lock in the final pixels
+                    // Lock in the final pattern
                     clearInterval(scrambleInterval);
                     allPixelsTop.forEach((px, i) => {
                         px.style.opacity = finalTargetGridTop[Math.floor(i / topCols)][i % topCols] === '1' ? 1 : 0;
@@ -375,49 +472,60 @@
                 }
             }, 60);
 
-            // --- REAL API CALL INTEGRATION ---
+            // --- REAL API LOGIC ---
             try {
-                // 1. Queue the Knock
+                // 1. Send the Knock Request
                 const resp = await fetch('/api/queue-knock', { method: 'POST' });
                 const data = await resp.json();
                 const jobId = data.job_id;
 
-                // 2. Poll for completion
+                // 2. Poll for Completion
                 const pollInterval = setInterval(async () => {
                     const statusResp = await fetch(`/api/job-status/${jobId}`);
                     const job = await statusResp.json();
 
-                    if (job.status === 'assigned') {
-                        cursor.innerText = 'knocking...';
-                    } 
-                    else if (job.status === 'completed') {
+                    if (job.status === 'completed') {
                         clearInterval(pollInterval);
                         
-                        // Extract Unit ID (MAC Address last 4 chars)
+                        // Extract Unit ID (Last 4 chars of MAC address)
                         const unitId = job.worker ? job.worker.replace(/:/g, '').slice(-4).toUpperCase() : "UKWN";
                         
-                        // Calculate the Final Top Grid with the real ID
+                        // Set the final target grid so the scramble loop can lock it in
                         finalTargetGridTop = stringToGrid(`#${unitId}`, topCols);
-                        isResolved = true; // This triggers the scramble loop to lock in
+                        isResolved = true;
 
                         // Cleanup Loading Bar & Cursor
                         loadingContainer.style.opacity = '0';
                         setTimeout(() => loadingContainer.remove(), 300);
                         activeKnocks--;
-                        if (activeKnocks === 0) cursor.innerText = '[ KNOCK ]';
+                        if (activeKnocks > 0) {
+                            cursor.innerText = 'queuing...';
+                        } else {
+                            cursor.innerText = '[ KNOCK ]';
+                            if (isTouch) {
+                                cursor.style.opacity = '0';
+                            }
+                        }
                     }
-                }, 1000); // Check every 1 second
+                }, 1000); // Check every second
 
             } catch (error) {
                 console.error(error);
+                // Fallback if server is down
                 finalTargetGridTop = stringToGrid("ERROR", topCols);
                 isResolved = true;
                 
                 loadingContainer.style.opacity = '0';
                 setTimeout(() => loadingContainer.remove(), 300);
                 activeKnocks--;
-                if (activeKnocks === 0) cursor.innerText = '[ ERROR ]';
-                setTimeout(() => { if (activeKnocks === 0) cursor.innerText = '[ KNOCK ]'; }, 2000);
+                if (activeKnocks > 0) {
+                    cursor.innerText = 'queuing...';
+                } else {
+                    cursor.innerText = '[ ERROR ]';
+                    setTimeout(() => {
+                        if (activeKnocks === 0) cursor.innerText = '[ KNOCK ]';
+                    }, 2000);
+                }
             }
         });
 
@@ -439,4 +547,5 @@
         backdrop.onclick = togglePanel;
     </script>
 </body>
+
 </html>
