@@ -51,6 +51,7 @@
             align-items: flex-start;
             gap: 8px;
             width: max-content;
+            transition: opacity 0.5s ease-out;
         }
 
         .stamp-row-small {
@@ -143,13 +144,15 @@
             right: 40px;
             font-size: 12px;
             font-family: inherit;
-            background: none;
             border: none;
             cursor: pointer;
             text-decoration: underline;
             color: #666;
             z-index: 10;
-            background: rgba(255, 255, 255, 0.8);
+            background: transparent;
+            padding: 30px;
+            margin-top: -30px;
+            margin-right: -30px;
         }
 
         .learn-btn:hover {
@@ -270,16 +273,56 @@
         let isTouch = false;
         const pastStamps = [];
 
+        let isHolding = false;
+        let isQueueMode = false;
+        let queuedKnocks = 1;
+        let holdTimeout;
+        let dragAccumulator = 0;
+        let lastX = 0;
+        let lastY = 0;
+
         // Track mouse position
         window.addEventListener('pointermove', (e) => {
             if (e.pointerType === 'mouse') {
                 if (!cursorMoved) {
                     cursorMoved = true;
                     cursor.style.opacity = '1';
-                    cursor.style.transform = 'translate(20px, 20px)';
+                    cursor.style.transform = 'translate(-50%, -50%)';
                 }
                 cursor.style.left = e.clientX + 'px';
                 cursor.style.top = e.clientY + 'px';
+            } else if (isHolding) {
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            }
+
+            if (isQueueMode) {
+                let dx = e.clientX - lastX;
+                let dy = e.clientY - lastY;
+                dragAccumulator += (dx - dy); // right and up increases
+                if (Math.abs(dragAccumulator) > 10) {
+                    let step = Math.sign(dragAccumulator) * Math.floor(Math.abs(dragAccumulator) / 10);
+                    queuedKnocks += step;
+                    dragAccumulator -= step * 10;
+                    if (queuedKnocks > 100) queuedKnocks = 100;
+                    if (queuedKnocks < 1) queuedKnocks = 1;
+                    cursor.innerText = `x${String(queuedKnocks).padStart(2, '0')}`;
+                    if (navigator.vibrate) navigator.vibrate(5);
+                }
+            }
+            lastX = e.clientX;
+            lastY = e.clientY;
+        });
+
+        window.addEventListener('wheel', (e) => {
+            if (isQueueMode) {
+                let delta = e.deltaY;
+                if (delta > 0) queuedKnocks--;
+                else queuedKnocks++;
+                if (queuedKnocks > 100) queuedKnocks = 100;
+                if (queuedKnocks < 1) queuedKnocks = 1;
+                cursor.innerText = `x${String(queuedKnocks).padStart(2, '0')}`;
+                if (navigator.vibrate) navigator.vibrate(5);
             }
         });
 
@@ -318,35 +361,10 @@
             return grid;
         }
 
-        // Handle Knocks
-        window.addEventListener('pointerdown', async (e) => {
-            // Ignore clicks on UI elements like learn more pane
-            if (e.target.id === 'learnToggle' || document.getElementById('panel').classList.contains('active')) return;
-
-            if (e.pointerType === 'mouse') {
-                if (!cursorMoved) {
-                    cursorMoved = true;
-                    cursor.style.opacity = '1';
-                    cursor.style.transform = 'translate(20px, 20px)';
-                }
-                cursor.style.left = e.clientX + 'px';
-                cursor.style.top = e.clientY + 'px';
-            } else {
-                isTouch = true;
-                cursor.style.opacity = '1';
-                cursor.style.transform = 'translate(-50%, -110px)';
-                cursor.style.left = e.clientX + 'px';
-                cursor.style.top = e.clientY + 'px';
-            }
-
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
+        // Handle Knocks (ASYNC for API Call)
+        async function triggerKnock(clientX, clientY) {
+            if (navigator.vibrate) navigator.vibrate(50);
             playThud();
-
-            // Setup fixed dimensions for our strings
-            const topCols = 5 * 4 - 1;   // 19 pixels wide for "#XXXX"
-            const bottomCols = 8 * 4 - 1; // 31 pixels wide for "HH:MM:SS"
 
             const now = new Date();
             let hours12 = now.getHours() % 12 || 12;
@@ -355,8 +373,9 @@
             const seconds = String(now.getSeconds()).padStart(2, '0');
             const timeStr = `${hours}:${minutes}:${seconds}`;
 
-            // We can pre-calculate the bottom grid because time is known immediately
-            const targetGridBottom = stringToGrid(timeStr, bottomCols);
+            // Fixed widths for strings: "#XXXX" (5 chars) and "HH:MM:SS" (8 chars)
+            const topCols = 5 * 4 - 1;   
+            const bottomCols = 8 * 4 - 1; 
 
             document.getElementById('centerInst').style.opacity = '0';
 
@@ -372,12 +391,11 @@
             bottomGridContainer.className = 'stamp-row-large';
             bottomGridContainer.style.gridTemplateColumns = `repeat(${bottomCols}, 1fr)`;
 
-            // Slight random misalignment for harsh industrial feel
-            const rotation = (Math.random() * 10) - 5; // -5deg to +5deg
-            let baseX = e.clientX + (Math.random() * 6 - 3);
-            let baseY = e.clientY + (Math.random() * 6 - 3);
+            // Positioning Logic
+            const rotation = (Math.random() * 10) - 5;
+            let baseX = clientX + (Math.random() * 6 - 3);
+            let baseY = clientY + (Math.random() * 6 - 3);
 
-            // Sunflower spiral calculation to prevent absolute overlaps
             let overlap = true;
             let spiralRadius = 0;
             let spiralAngle = 0;
@@ -395,8 +413,8 @@
                 if (overlap) {
                     spiralAngle += 0.5;
                     spiralRadius += 2;
-                    baseX = e.clientX + Math.cos(spiralAngle) * spiralRadius;
-                    baseY = e.clientY + Math.sin(spiralAngle) * spiralRadius;
+                    baseX = clientX + Math.cos(spiralAngle) * spiralRadius;
+                    baseY = clientY + Math.sin(spiralAngle) * spiralRadius;
                 }
             }
             pastStamps.push({ x: baseX, y: baseY });
@@ -404,6 +422,8 @@
             stamp.style.left = baseX + 'px';
             stamp.style.top = baseY + 'px';
             stamp.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+
+            const targetGridBottom = stringToGrid(timeStr, bottomCols);
 
             const loadingContainer = document.createElement('div');
             loadingContainer.className = 'stamp-loading-container';
@@ -417,7 +437,6 @@
                 loadingPixels.push(px);
             }
 
-            // Create pixel elements, but don't set their final state yet for the Top Grid
             const allPixelsTop = [];
             for (let i = 0; i < topCols * 5; i++) {
                 const px = document.createElement('div');
@@ -431,7 +450,6 @@
                 const px = document.createElement('div');
                 px.className = 'stamp-pixel';
                 bottomGridContainer.appendChild(px);
-                // Bottom state is known, store it
                 allPixelsBottom.push({ el: px, isOn: targetGridBottom[Math.floor(i / bottomCols)][i % bottomCols] === '1' });
             }
 
@@ -440,16 +458,26 @@
             stamp.appendChild(loadingContainer);
             stampsContainer.appendChild(stamp);
 
-            // Animate pixel loading bar sequentially over 2s
+            pastStamps[pastStamps.length - 1].el = stamp;
+
+            const maxStamps = isTouch ? 10 : 30;
+            if (pastStamps.length > maxStamps) {
+                const oldest = pastStamps.shift();
+                if (oldest && oldest.el) {
+                    oldest.el.style.opacity = '0';
+                    setTimeout(() => oldest.el.remove(), 500);
+                }
+            }
+
+            // Animate pixel loading bar sequentially
             loadingPixels.forEach((px, i) => {
-                setTimeout(() => {
-                    px.style.opacity = '1';
-                }, (i / bottomCols) * 2000);
+                setTimeout(() => px.style.opacity = '1', (i / bottomCols) * 2000);
             });
 
-            // Update Cursor Text & State
             activeKnocks++;
-            cursor.innerText = activeKnocks > 1 ? 'queuing...' : 'knocking...';
+            if (!isQueueMode && !isHolding) {
+                cursor.innerText = activeKnocks > 1 ? 'queuing...' : 'knocking...';
+            }
 
             let isResolved = false;
             let finalTargetGridTop = [];
@@ -457,11 +485,9 @@
             // Continuous Scramble Loop - runs until API resolves
             const scrambleInterval = setInterval(() => {
                 if (!isResolved) {
-                    // Scramble all pixels wildly
                     allPixelsTop.forEach(px => px.style.opacity = Math.random() > 0.5 ? 1 : 0.1);
                     allPixelsBottom.forEach(p => p.el.style.opacity = Math.random() > 0.5 ? 1 : 0.1);
                 } else {
-                    // Lock in the final pattern
                     clearInterval(scrambleInterval);
                     allPixelsTop.forEach((px, i) => {
                         px.style.opacity = finalTargetGridTop[Math.floor(i / topCols)][i % topCols] === '1' ? 1 : 0;
@@ -474,58 +500,118 @@
 
             // --- REAL API LOGIC ---
             try {
-                // 1. Send the Knock Request
+                // 1. Send Request
                 const resp = await fetch('/api/queue-knock', { method: 'POST' });
                 const data = await resp.json();
                 const jobId = data.job_id;
 
                 // 2. Poll for Completion
                 const pollInterval = setInterval(async () => {
-                    const statusResp = await fetch(`/api/job-status/${jobId}`);
-                    const job = await statusResp.json();
+                    try {
+                        const statusResp = await fetch(`/api/job-status/${jobId}`);
+                        const job = await statusResp.json();
 
-                    if (job.status === 'completed') {
-                        clearInterval(pollInterval);
-                        
-                        // Extract Unit ID (Last 4 chars of MAC address)
-                        const unitId = job.worker ? job.worker.replace(/:/g, '').slice(-4).toUpperCase() : "UKWN";
-                        
-                        // Set the final target grid so the scramble loop can lock it in
-                        finalTargetGridTop = stringToGrid(`#${unitId}`, topCols);
-                        isResolved = true;
+                        if (job.status === 'completed') {
+                            clearInterval(pollInterval);
+                            
+                            // Extract Unit ID (Last 4 chars of MAC address)
+                            const unitId = job.worker ? job.worker.replace(/:/g, '').slice(-4).toUpperCase() : "UKWN";
+                            
+                            finalTargetGridTop = stringToGrid(`#${unitId}`, topCols);
+                            isResolved = true;
 
-                        // Cleanup Loading Bar & Cursor
-                        loadingContainer.style.opacity = '0';
-                        setTimeout(() => loadingContainer.remove(), 300);
-                        activeKnocks--;
-                        if (activeKnocks > 0) {
-                            cursor.innerText = 'queuing...';
-                        } else {
-                            cursor.innerText = '[ KNOCK ]';
-                            if (isTouch) {
-                                cursor.style.opacity = '0';
+                            loadingContainer.style.opacity = '0';
+                            setTimeout(() => loadingContainer.remove(), 300);
+                            
+                            activeKnocks--;
+                            if (!isQueueMode && !isHolding) {
+                                if (activeKnocks > 0) cursor.innerText = 'queuing...';
+                                else {
+                                    cursor.innerText = '[ KNOCK ]';
+                                    if (isTouch) cursor.style.opacity = '0';
+                                }
                             }
                         }
+                    } catch (e) {
+                        clearInterval(pollInterval);
+                        throw e; // Pass to main catch
                     }
-                }, 1000); // Check every second
+                }, 1000); 
 
             } catch (error) {
                 console.error(error);
-                // Fallback if server is down
                 finalTargetGridTop = stringToGrid("ERROR", topCols);
                 isResolved = true;
                 
                 loadingContainer.style.opacity = '0';
                 setTimeout(() => loadingContainer.remove(), 300);
+                
                 activeKnocks--;
-                if (activeKnocks > 0) {
-                    cursor.innerText = 'queuing...';
-                } else {
+                if (!isQueueMode && !isHolding) {
                     cursor.innerText = '[ ERROR ]';
                     setTimeout(() => {
                         if (activeKnocks === 0) cursor.innerText = '[ KNOCK ]';
                     }, 2000);
                 }
+            }
+        }
+
+        window.addEventListener('pointerdown', (e) => {
+            if (e.target.id === 'learnToggle' || document.getElementById('panel').classList.contains('active')) return;
+
+            if (e.pointerType === 'mouse') {
+                if (!cursorMoved) {
+                    cursorMoved = true;
+                    cursor.style.opacity = '1';
+                    cursor.style.transform = 'translate(-50%, -50%)';
+                }
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            } else {
+                isTouch = true;
+                cursor.style.opacity = '1';
+                cursor.style.transform = 'translate(-50%, -110px)';
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            }
+
+            document.getElementById('centerInst').style.opacity = '0';
+
+            isHolding = true;
+            isQueueMode = false;
+            queuedKnocks = 1;
+            dragAccumulator = 0;
+            lastX = e.clientX;
+            lastY = e.clientY;
+
+            holdTimeout = setTimeout(() => {
+                if (isHolding) {
+                    isQueueMode = true;
+                    cursor.innerText = `x01`;
+                }
+            }, 300);
+        });
+
+        window.addEventListener('pointerup', (e) => {
+            if (!isHolding) return;
+            isHolding = false;
+            clearTimeout(holdTimeout);
+
+            if (isQueueMode) {
+                isQueueMode = false;
+                let countLeft = queuedKnocks;
+                function drop() {
+                    triggerKnock(e.clientX, e.clientY);
+                    countLeft--;
+                    if (countLeft > 0) setTimeout(drop, 35);
+                    else {
+                        if (activeKnocks > 0) cursor.innerText = 'queuing...';
+                        else cursor.innerText = '[ KNOCK ]';
+                    }
+                }
+                drop();
+            } else {
+                triggerKnock(e.clientX, e.clientY);
             }
         });
 
