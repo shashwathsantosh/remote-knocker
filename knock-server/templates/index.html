@@ -320,7 +320,7 @@
                     let step = Math.sign(dragAccumulator) * Math.floor(Math.abs(dragAccumulator) / 10);
                     queuedKnocks += step;
                     dragAccumulator -= step * 10;
-                    if (queuedKnocks > 25) queuedKnocks = 25;
+                    if (queuedKnocks > 10) queuedKnocks = 10;
                     if (queuedKnocks < 1) queuedKnocks = 1;
                     cursor.innerText = `x${String(queuedKnocks).padStart(2, '0')}`;
                     if (navigator.vibrate) navigator.vibrate(5);
@@ -335,16 +335,17 @@
                 let delta = e.deltaY;
                 if (delta > 0) queuedKnocks--;
                 else queuedKnocks++;
-                if (queuedKnocks > 25) queuedKnocks = 25;
+                if (queuedKnocks > 10) queuedKnocks = 10;
                 if (queuedKnocks < 1) queuedKnocks = 1;
                 cursor.innerText = `x${String(queuedKnocks).padStart(2, '0')}`;
                 if (navigator.vibrate) navigator.vibrate(5);
             }
         });
 
-        // Synthetic Thud using Web Audio API
         let globalAudioCtx = null;
-        function playThud() {
+        let audioUnlocked = false;
+
+        function unlockAudio() {
             if (!globalAudioCtx) {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 if (!AudioContext) return;
@@ -353,7 +354,25 @@
             if (globalAudioCtx.state === 'suspended') {
                 globalAudioCtx.resume();
             }
+            if (!audioUnlocked && globalAudioCtx) {
+                const buffer = globalAudioCtx.createBuffer(1, 1, 22050);
+                const source = globalAudioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(globalAudioCtx.destination);
+                if (source.start) source.start(0);
+                else if (source.noteOn) source.noteOn(0);
+                audioUnlocked = true;
+            }
+        }
+
+        // Synthetic Thud using Web Audio API
+        function playThud() {
+            if (!globalAudioCtx) return;
+            if (globalAudioCtx.state === 'suspended') {
+                globalAudioCtx.resume();
+            }
             const ctx = globalAudioCtx;
+            const now = ctx.currentTime;
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
 
@@ -361,14 +380,14 @@
             gain.connect(ctx.destination);
 
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(120, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+            osc.frequency.setValueAtTime(120, now);
+            osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.15);
 
-            gain.gain.setValueAtTime(1, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+            gain.gain.setValueAtTime(1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
 
-            osc.start();
-            osc.stop(ctx.currentTime + 0.2);
+            osc.start(now);
+            osc.stop(now + 0.2);
         }
 
         // Helper to convert string to pixel grid array
@@ -464,6 +483,7 @@
             for (let i = 0; i < topCols * 5; i++) {
                 const px = document.createElement('div');
                 px.className = 'stamp-pixel';
+                px.style.opacity = Math.random() > 0.5 ? 1 : 0.1;
                 topGridContainer.appendChild(px);
                 allPixelsTop.push(px);
             }
@@ -472,6 +492,7 @@
             for (let i = 0; i < bottomCols * 5; i++) {
                 const px = document.createElement('div');
                 px.className = 'stamp-pixel';
+                px.style.opacity = Math.random() > 0.5 ? 1 : 0.1;
                 bottomGridContainer.appendChild(px);
                 allPixelsBottom.push({ el: px, isOn: targetGridBottom[Math.floor(i / bottomCols)][i % bottomCols] === '1' });
             }
@@ -482,6 +503,15 @@
             stampsContainer.appendChild(stamp);
 
             pastStamps[pastStamps.length - 1].el = stamp;
+
+            const maxStamps = Math.max(10, activeKnocks + 1);
+            while (pastStamps.length > maxStamps) {
+                const oldest = pastStamps.shift();
+                if (oldest && oldest.el) {
+                    oldest.el.style.opacity = '0';
+                    setTimeout(() => oldest.el.remove(), 500);
+                }
+            }
 
             // Animate pixel loading bar sequentially
             loadingPixels.forEach((px, i) => {
@@ -594,6 +624,8 @@
 
         window.addEventListener('pointerdown', (e) => {
             if (e.target.id === 'learnToggle' || document.getElementById('panel').classList.contains('active')) return;
+
+            unlockAudio();
 
             if (e.pointerType === 'mouse') {
                 if (!cursorMoved) {
