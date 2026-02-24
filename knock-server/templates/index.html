@@ -4,99 +4,111 @@
 <head>
     <title>KNOCK</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Silkscreen&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
             height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            overflow: hidden;
             font-family: 'JetBrains Mono', monospace;
             background: #fff;
             color: #000;
             user-select: none;
+            cursor: none;
         }
 
-        #knockBtn {
-            position: relative;
-            background: transparent;
-            color: #000;
-            border: 2px solid #000;
-            padding: 15px 30px;
-            font-family: inherit;
-            font-size: 14px;
+        #inkCursor {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            font-size: 18px;
             font-weight: 600;
-            cursor: pointer;
-            outline: none;
-            overflow: hidden;
-            min-width: 240px; /* Made slightly wider to fit status text */
-            text-align: center;
-            transition: all 0.2s ease;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            white-space: nowrap;
+            transition: left 0.1s, top 0.1s, transform 0.1s;
         }
 
-        /* The Progress Bar Background */
-        #knockBtn::after {
-            content: '';
+        #stampsContainer {
             position: absolute;
             top: 0;
             left: 0;
-            height: 100%;
-            width: 0%;
-            background: #000;
-            z-index: 0;
-            transition: width 0s;
-        }
-
-        /* The Button Text */
-        #knockBtn span {
-            position: relative;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
             z-index: 1;
+            overflow: hidden;
+        }
+
+        .stamp {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+            width: max-content;
+        }
+
+        .stamp-row-small { display: grid; grid-template-rows: repeat(5, 1fr); gap: 1px; }
+        .stamp-row-small .stamp-pixel { width: 3px; height: 3px; }
+
+        .stamp-row-large { display: grid; grid-template-rows: repeat(5, 1fr); gap: 1px; }
+        .stamp-row-large .stamp-pixel { width: 6px; height: 6px; }
+
+        .stamp-pixel {
+            background: #000;
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.05s linear;
+        }
+
+        .stamp-loading-container {
+            display: grid;
+            gap: 1px;
+            margin-top: 4px;
+            transition: opacity 0.3s;
+        }
+
+        .loading-pixel {
+            width: 6px;
+            height: 6px;
+            background: #000;
+            border-radius: 50%;
+            opacity: 0;
+        }
+
+        .center-instruction {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Silkscreen', cursive;
+            font-size: 16px;
+            color: #000;
             pointer-events: none;
+            z-index: 0;
+            transition: opacity 0.3s;
         }
 
-        #knockBtn:not(.loading):not(.success):hover {
-            background: rgba(0, 0, 0, 0.05);
-        }
-
-        /* Loading State - Slow fill */
-        #knockBtn.loading {
-            color: #fff;
-            border-color: #000;
-            pointer-events: none;
-        }
-
-        #knockBtn.loading::after {
-            width: 100%;
-            /* We simulate a fill. If real knock is faster, JS will snap it to 100% */
-            transition: width 10s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        /* Success State - Instant fill */
-        #knockBtn.success {
-            color: #fff;
-            border-color: #000;
-            pointer-events: none;
-        }
-
-        #knockBtn.success::after {
-            width: 100%;
-            transition: width 0.2s ease-out; /* Snap to full */
-        }
+        .learn-btn, .close-icon, #backdrop { cursor: pointer; }
 
         .online-count {
-            position: absolute;
-            top: 100%;
+            position: fixed;
+            bottom: 40px;
             left: 0;
             width: 100%;
             text-align: center;
-            font-size: 11px;
-            color: #666;
-            margin-top: 15px;
+            font-size: 12px;
+            color: #999;
             font-weight: 500;
             pointer-events: none;
+            z-index: 10;
+            background: transparent;
+            padding: 0;
         }
+
+        .online-count span { color: #00e000; font-size: 14px; vertical-align: middle; }
 
         .learn-btn {
             position: absolute;
@@ -110,62 +122,26 @@
             text-decoration: underline;
             color: #666;
             z-index: 10;
+            background: rgba(255, 255, 255, 0.8);
         }
-
-        .learn-btn:hover {
-            color: #000;
-        }
+        .learn-btn:hover { color: #000; }
 
         /* Slide Pane */
         .panel-backdrop {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.9);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-            z-index: 100;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.9); opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 100;
         }
-
-        .panel-backdrop.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
+        .panel-backdrop.active { opacity: 1; pointer-events: auto; }
+        
         .side-panel {
-            position: fixed;
-            top: 0;
-            right: 0;
-            width: 320px;
-            height: 100%;
-            background: #000;
-            border-left: 1px solid #333;
-            transform: translateX(100%);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 101;
-            padding: 60px 40px;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            color: #fff;
+            position: fixed; top: 0; right: 0; width: 320px; height: 100%;
+            background: #000; border-left: 1px solid #333; transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 101;
+            padding: 60px 40px; box-sizing: border-box; display: flex; align-items: center; color: #fff;
         }
-
-        .side-panel.active {
-            transform: translateX(0);
-        }
-
-        .close-icon {
-            position: absolute;
-            top: 40px;
-            right: 40px;
-            cursor: pointer;
-            font-size: 20px;
-            line-height: 1;
-            color: #fff;
-        }
+        .side-panel.active { transform: translateX(0); }
+        
+        .close-icon { position: absolute; top: 40px; right: 40px; font-size: 20px; line-height: 1; color: #fff; }
     </style>
 </head>
 
@@ -177,77 +153,271 @@
     <div class="side-panel" id="panel">
         <div class="close-icon" id="closeBtn">×</div>
         <p style="font-size: 13px; line-height: 1.6; color: #fff; margin: 0;">
-            When you click the button, a small device knocks on a piece of wood somewhere else. The wood is real, the
-            knock is real, but it happens remotely.
+            When you click the button, a small device knocks on a piece of wood somewhere else. The wood is real, the knock is real, but it happens remotely.
             <br><br>
-            Multiple pieces of wood are connected to the system in different locations. Each time someone clicks, one of
-            them gets knocked on.
+            Multiple pieces of wood are connected to the system in different locations. Each time someone clicks, one of them gets knocked on.
         </p>
     </div>
 
-    <div style="position: relative;">
-        <button id="knockBtn"><span>knock on wood</span></button>
-        <!-- Data passed from Python is injected here -->
-        <div class="online-count">{{ online_count }} devices online</div>
-    </div>
+    <!-- Data passed from Python is injected here -->
+    <div class="online-count">{{ online_count }} Devices Online <span>●</span></div>
+
+    <div class="center-instruction" id="centerInst">Tap to send knock</div>
+    <div id="stampsContainer"></div>
+    <div id="inkCursor">[ KNOCK ]</div>
 
     <script>
-        // Main Button Logic
-        const btn = document.getElementById('knockBtn');
-        const label = btn.querySelector('span');
-        
-        // Helper to reset button
-        function resetBtn() {
-            btn.classList.remove('success');
-            label.innerText = "knock on wood";
-            // Remove inline style to allow CSS transition reset
-            const after = window.getComputedStyle(btn, '::after');
+        const font = {
+            '0': ['010', '101', '101', '101', '010'], '1': ['010', '110', '010', '010', '111'], '2': ['110', '001', '010', '100', '111'],
+            '3': ['110', '001', '010', '001', '110'], '4': ['101', '101', '111', '001', '001'], '5': ['111', '100', '110', '001', '110'],
+            '6': ['011', '100', '110', '101', '010'], '7': ['111', '001', '010', '010', '010'], '8': ['010', '101', '010', '101', '010'],
+            '9': ['010', '101', '011', '001', '010'], ':': ['000', '010', '000', '010', '000'], 'A': ['010', '101', '111', '101', '101'],
+            'B': ['110', '101', '110', '101', '110'], 'C': ['011', '100', '100', '100', '011'], 'D': ['110', '101', '101', '101', '110'],
+            'E': ['111', '100', '111', '100', '111'], 'F': ['111', '100', '110', '100', '100'], 'G': ['011', '100', '101', '101', '011'],
+            'H': ['101', '101', '111', '101', '101'], 'I': ['111', '010', '010', '010', '111'], 'J': ['001', '001', '001', '101', '010'],
+            'K': ['101', '110', '100', '110', '101'], 'L': ['100', '100', '100', '100', '111'], 'M': ['101', '111', '101', '101', '101'],
+            'N': ['110', '101', '101', '101', '101'], 'O': ['010', '101', '101', '101', '010'], 'P': ['110', '101', '110', '100', '100'],
+            'Q': ['010', '101', '101', '011', '001'], 'R': ['110', '101', '110', '101', '101'], 'S': ['011', '100', '010', '001', '110'],
+            'T': ['111', '010', '010', '010', '010'], 'U': ['101', '101', '101', '101', '011'], 'V': ['101', '101', '101', '101', '010'],
+            'W': ['101', '101', '101', '111', '101'], 'X': ['101', '101', '010', '101', '101'], 'Y': ['101', '101', '010', '010', '010'],
+            'Z': ['111', '001', '010', '100', '111'], ' ': ['000', '000', '000', '000', '000'], '#': ['010', '111', '010', '111', '010'],
+            '-': ['000', '000', '111', '000', '000']
+        };
+
+        const cursor = document.getElementById('inkCursor');
+        const stampsContainer = document.getElementById('stampsContainer');
+
+        let activeKnocks = 0;
+        let cursorMoved = false;
+        const pastStamps = [];
+
+        // Track mouse position
+        window.addEventListener('pointermove', (e) => {
+            if (e.pointerType === 'mouse') {
+                if (!cursorMoved) {
+                    cursorMoved = true;
+                    cursor.style.transform = 'translate(15px, 15px)';
+                    cursor.style.transition = 'none';
+                }
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            }
+        });
+
+        // Synthetic Thud
+        function playThud() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(120, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+
+            gain.gain.setValueAtTime(1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+
+            osc.start();
+            osc.stop(ctx.currentTime + 0.2);
         }
 
-        btn.addEventListener('click', async () => {
-            if (btn.classList.contains('loading') || btn.classList.contains('success')) return;
+        // Helper to convert string to pixel array
+        function stringToGrid(str, targetCols) {
+            const grid = [];
+            for (let r = 0; r < 5; r++) {
+                let row = "";
+                for (let char of str) {
+                    // Fallback to space if char not in font dictionary
+                    row += (font[char] || font[' '])[r] + "0";
+                }
+                grid.push(row.slice(0, targetCols));
+            }
+            return grid;
+        }
 
-            // 1. UI: Start Loading
-            btn.classList.add('loading');
-            label.innerText = "queuing...";
+        // Handle Knocks
+        window.addEventListener('pointerdown', async (e) => {
+            // Ignore clicks on UI elements
+            if (e.target.id === 'learnToggle' || e.target.id === 'closeBtn' || e.target.closest('#panel')) return;
 
+            if (!cursorMoved) {
+                cursorMoved = true;
+                cursor.style.transform = 'translate(15px, 15px)';
+                cursor.style.transition = 'none';
+            }
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+
+            if (navigator.vibrate) navigator.vibrate(50);
+            playThud();
+
+            document.getElementById('centerInst').style.opacity = '0';
+
+            // Fixed widths for strings: "#XXXX" (5 chars) and "HH:MM:SS" (8 chars)
+            const topCols = 5 * 4 - 1;   // 19
+            const bottomCols = 8 * 4 - 1; // 31
+
+            // Get Current Time
+            const now = new Date();
+            let hours12 = now.getHours() % 12 || 12;
+            const timeStr = `${String(hours12).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            const targetGridBottom = stringToGrid(timeStr, bottomCols);
+
+            // Generate visual stamp container
+            const stamp = document.createElement('div');
+            stamp.className = 'stamp';
+
+            const topGridContainer = document.createElement('div');
+            topGridContainer.className = 'stamp-row-small';
+            topGridContainer.style.gridTemplateColumns = `repeat(${topCols}, 1fr)`;
+
+            const bottomGridContainer = document.createElement('div');
+            bottomGridContainer.className = 'stamp-row-large';
+            bottomGridContainer.style.gridTemplateColumns = `repeat(${bottomCols}, 1fr)`;
+
+            // Positioning Logic
+            const rotation = (Math.random() * 10) - 5;
+            let baseX = e.clientX + (Math.random() * 6 - 3);
+            let baseY = e.clientY + (Math.random() * 6 - 3);
+
+            let overlap = true;
+            let spiralRadius = 0;
+            let spiralAngle = 0;
+
+            while (overlap && spiralRadius < 800) {
+                overlap = false;
+                for (const pos of pastStamps) {
+                    const dx = baseX - pos.x;
+                    const dy = baseY - pos.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < 60) {
+                        overlap = true;
+                        break;
+                    }
+                }
+                if (overlap) {
+                    spiralAngle += 0.5;
+                    spiralRadius += 2;
+                    baseX = e.clientX + Math.cos(spiralAngle) * spiralRadius;
+                    baseY = e.clientY + Math.sin(spiralAngle) * spiralRadius;
+                }
+            }
+            pastStamps.push({ x: baseX, y: baseY });
+
+            stamp.style.left = baseX + 'px';
+            stamp.style.top = baseY + 'px';
+            stamp.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+
+            const loadingContainer = document.createElement('div');
+            loadingContainer.className = 'stamp-loading-container';
+            loadingContainer.style.gridTemplateColumns = `repeat(${bottomCols}, 1fr)`;
+
+            const loadingPixels = [];
+            for (let i = 0; i < bottomCols; i++) {
+                const px = document.createElement('div');
+                px.className = 'loading-pixel';
+                loadingContainer.appendChild(px);
+                loadingPixels.push(px);
+            }
+
+            const allPixelsTop = [];
+            for (let i = 0; i < topCols * 5; i++) {
+                const px = document.createElement('div');
+                px.className = 'stamp-pixel';
+                topGridContainer.appendChild(px);
+                allPixelsTop.push(px);
+            }
+
+            const allPixelsBottom = [];
+            for (let i = 0; i < bottomCols * 5; i++) {
+                const px = document.createElement('div');
+                px.className = 'stamp-pixel';
+                bottomGridContainer.appendChild(px);
+                allPixelsBottom.push({ el: px, isOn: targetGridBottom[Math.floor(i / bottomCols)][i % bottomCols] === '1' });
+            }
+
+            stamp.appendChild(topGridContainer);
+            stamp.appendChild(bottomGridContainer);
+            stamp.appendChild(loadingContainer);
+            stampsContainer.appendChild(stamp);
+
+            // Animate pixel loading bar sequentially (visual flair)
+            loadingPixels.forEach((px, i) => {
+                setTimeout(() => { px.style.opacity = '1'; }, (i / bottomCols) * 2000);
+            });
+
+            // Update Global State
+            activeKnocks++;
+            cursor.innerText = 'queuing...';
+
+            let isResolved = false;
+            let finalTargetGridTop = [];
+
+            // Continuous Scramble Loop (Runs until API returns Success)
+            const scrambleInterval = setInterval(() => {
+                if (!isResolved) {
+                    // Scramble both while waiting
+                    allPixelsTop.forEach(px => px.style.opacity = Math.random() > 0.5 ? 1 : 0.1);
+                    allPixelsBottom.forEach(p => p.el.style.opacity = Math.random() > 0.5 ? 1 : 0.1);
+                } else {
+                    // Lock in the final pixels
+                    clearInterval(scrambleInterval);
+                    allPixelsTop.forEach((px, i) => {
+                        px.style.opacity = finalTargetGridTop[Math.floor(i / topCols)][i % topCols] === '1' ? 1 : 0;
+                    });
+                    allPixelsBottom.forEach(p => {
+                        p.el.style.opacity = p.isOn ? 1 : 0;
+                    });
+                }
+            }, 60);
+
+            // --- REAL API CALL INTEGRATION ---
             try {
-                // 2. API: Request Knock
+                // 1. Queue the Knock
                 const resp = await fetch('/api/queue-knock', { method: 'POST' });
                 const data = await resp.json();
                 const jobId = data.job_id;
 
-                label.innerText = "waiting for unit...";
-
-                // 3. API: Poll for completion
-                const interval = setInterval(async () => {
+                // 2. Poll for completion
+                const pollInterval = setInterval(async () => {
                     const statusResp = await fetch(`/api/job-status/${jobId}`);
                     const job = await statusResp.json();
 
-                    if (job.status === 'completed') {
-                        clearInterval(interval);
+                    if (job.status === 'assigned') {
+                        cursor.innerText = 'knocking...';
+                    } 
+                    else if (job.status === 'completed') {
+                        clearInterval(pollInterval);
                         
-                        // 4. UI: Success!
-                        btn.classList.remove('loading');
-                        btn.classList.add('success');
+                        // Extract Unit ID (MAC Address last 4 chars)
+                        const unitId = job.worker ? job.worker.replace(/:/g, '').slice(-4).toUpperCase() : "UKWN";
                         
-                        // Format the MAC address to look like "Unit #A1B2"
-                        const unitId = job.worker ? job.worker.replace(/:/g, '').slice(-4) : "UNKNOWN";
-                        label.innerText = `delivered via unit #${unitId}`;
+                        // Calculate the Final Top Grid with the real ID
+                        finalTargetGridTop = stringToGrid(`#${unitId}`, topCols);
+                        isResolved = true; // This triggers the scramble loop to lock in
 
-                        // 5. Reset after 3 seconds
-                        setTimeout(resetBtn, 3000);
-                    }
-                    else if (job.status === 'assigned') {
-                         label.innerText = "knocking...";
+                        // Cleanup Loading Bar & Cursor
+                        loadingContainer.style.opacity = '0';
+                        setTimeout(() => loadingContainer.remove(), 300);
+                        activeKnocks--;
+                        if (activeKnocks === 0) cursor.innerText = '[ KNOCK ]';
                     }
                 }, 1000); // Check every 1 second
 
             } catch (error) {
                 console.error(error);
-                btn.classList.remove('loading');
-                label.innerText = "error connecting";
-                setTimeout(resetBtn, 2000);
+                finalTargetGridTop = stringToGrid("ERROR", topCols);
+                isResolved = true;
+                
+                loadingContainer.style.opacity = '0';
+                setTimeout(() => loadingContainer.remove(), 300);
+                activeKnocks--;
+                if (activeKnocks === 0) cursor.innerText = '[ ERROR ]';
+                setTimeout(() => { if (activeKnocks === 0) cursor.innerText = '[ KNOCK ]'; }, 2000);
             }
         });
 
