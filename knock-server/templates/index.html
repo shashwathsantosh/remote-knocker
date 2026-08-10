@@ -346,6 +346,21 @@
       50%, 100% { opacity: 0; }
     }
 
+    @keyframes marquee {
+      0%   { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+
+    .marquee {
+      display: inline-block;
+      animation: marquee 8s linear infinite;
+    }
+
+    .btn-disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
     @keyframes einkFade {
       0%   { opacity: 0.3; filter: blur(0.5px); }
       100% { opacity: 1; filter: blur(0); }
@@ -639,7 +654,7 @@
           <div class="terminal">
             <div class="terminal-fill" id="terminal-fill"></div>
             <div class="terminal-lines" id="terminal">
-              <div class="line">{% if online_count > 0 %}<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;min-width:22px;border-radius:50%;background:#fff;color:#000;font-size:12px;font-weight:700;margin-right:6px;font-family:system-ui;animation:sharpBlink 1s step-end infinite">{{ online_count }}</span> KNOCKERS ONLINE{% else %}NO KNOCKERS ONLINE{% endif %}</div>
+              <div class="line">{% if online_count > 0 %}<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;min-width:22px;border-radius:50%;background:#fff;color:#000;font-size:12px;font-weight:700;margin-right:6px;font-family:system-ui;animation:sharpBlink 1s step-end infinite">{{ online_count }}</span> KNOCKERS ONLINE{% else %}<span class="marquee">NO KNOCKERS ONLINE — PLEASE CHECK INTERNET CONNECTION</span>{% endif %}</div>
             </div>
           </div>
         </div>
@@ -689,8 +704,13 @@
     const onlineCount = parseInt('{{ online_count }}') || 0;
     let isKnocking = false;
 
+    if (onlineCount === 0) {
+      btn.classList.add('btn-disabled');
+    }
+
     btn.addEventListener('click', async () => {
       if (isKnocking || onlineCount === 0) return;
+      if (navigator.vibrate) navigator.vibrate(50);
       isKnocking = true;
       btn.classList.add('pressed');
       knockCount++;
@@ -762,7 +782,7 @@
       if (onlineCount > 0) {
         line.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;min-width:22px;border-radius:50%;background:#fff;color:#000;font-size:12px;font-weight:700;margin-right:6px;font-family:system-ui;animation:sharpBlink 1s step-end infinite">' + onlineCount + '</span> KNOCKERS ONLINE';
       } else {
-        line.textContent = 'NO KNOCKERS ONLINE';
+        line.innerHTML = '<span class="marquee">NO KNOCKERS ONLINE \u2014 PLEASE CHECK INTERNET CONNECTION</span>';
       }
       terminal.appendChild(line);
       while (terminal.children.length > 2) terminal.removeChild(terminal.firstChild);
