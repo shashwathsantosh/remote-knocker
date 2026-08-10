@@ -639,7 +639,7 @@
           <div class="terminal">
             <div class="terminal-fill" id="terminal-fill"></div>
             <div class="terminal-lines" id="terminal">
-              <div class="line"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;min-width:22px;border-radius:50%;background:#fff;color:#000;font-size:12px;font-weight:700;margin-right:6px;font-family:system-ui;animation:sharpBlink 1s step-end infinite">{{ online_count }}</span> KNOCKERS ONLINE</div>
+              <div class="line">{% if online_count > 0 %}<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;min-width:22px;border-radius:50%;background:#fff;color:#000;font-size:12px;font-weight:700;margin-right:6px;font-family:system-ui;animation:sharpBlink 1s step-end infinite">{{ online_count }}</span> KNOCKERS ONLINE{% else %}NO KNOCKERS ONLINE{% endif %}</div>
             </div>
           </div>
         </div>
@@ -652,7 +652,7 @@
   <div class="modal-overlay" id="modal-overlay">
     <div class="modal">
       <button class="modal-close" id="modal-close">✕</button>
-      <img src="/static/knocker-device.gif" alt="Knocker device strapped to a tree" />
+      <img src="{{ url_for('static', filename='knocker-device.gif') }}" alt="Knocker device strapped to a tree" />
       <h4>How it works</h4>
       <p>Press the button. A device somewhere else physically knocks on a piece of wood.</p>
     </div>
@@ -690,7 +690,7 @@
     let isKnocking = false;
 
     btn.addEventListener('click', async () => {
-      if (isKnocking) return;
+      if (isKnocking || onlineCount === 0) return;
       isKnocking = true;
       btn.classList.add('pressed');
       knockCount++;
@@ -759,7 +759,11 @@
     function showOnline() {
       const line = document.createElement('div');
       line.className = 'line';
-      line.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;min-width:22px;border-radius:50%;background:#fff;color:#000;font-size:12px;font-weight:700;margin-right:6px;font-family:system-ui;animation:sharpBlink 1s step-end infinite">' + onlineCount + '</span> KNOCKERS ONLINE';
+      if (onlineCount > 0) {
+        line.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;min-width:22px;border-radius:50%;background:#fff;color:#000;font-size:12px;font-weight:700;margin-right:6px;font-family:system-ui;animation:sharpBlink 1s step-end infinite">' + onlineCount + '</span> KNOCKERS ONLINE';
+      } else {
+        line.textContent = 'NO KNOCKERS ONLINE';
+      }
       terminal.appendChild(line);
       while (terminal.children.length > 2) terminal.removeChild(terminal.firstChild);
     }
@@ -767,12 +771,6 @@
     // ==================== COLOR CONTROLS ====================
     const root = document.documentElement;
     const controls = document.getElementById('controls');
-
-    document.body.addEventListener('dblclick', (e) => {
-      if (e.target === document.body) {
-        controls.classList.toggle('hidden');
-      }
-    });
 
     document.getElementById('btn-scale').addEventListener('input', (e) => {
       document.querySelector('.btn-area').style.transform = 'translate(-50%, -50%) scale(' + e.target.value + ')';
