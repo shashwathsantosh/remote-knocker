@@ -1,706 +1,889 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>KNOCK</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Silkscreen&display=swap"
-        rel="stylesheet">
-    <style>
-        * {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Knock On Wood</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Silkscreen&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      /* Page */
+      --bg-color: #ededed;
 
-        body {
-            margin: 0;
-            height: 100vh;
-            overflow: hidden;
-            font-family: 'JetBrains Mono', monospace;
-            background: #fff;
-            color: #000;
-            user-select: none;
-            cursor: none;
-        }
+      /* Button surface */
+      --btn-light: #ff3d3d;
+      --btn-dark: #d60e00;
 
-        #inkCursor {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            font-family: 'Silkscreen', cursive;
-            font-size: 16px;
-            font-weight: 600;
-            pointer-events: none;
-            z-index: 9999;
-            transform: translate(-50%, -50%);
-            white-space: nowrap;
-            transition: opacity 0.3s;
-            opacity: 0;
-        }
+      /* Button text */
+      --text-light: #ffffff;
+      --text-dark: #ffffff;
 
-        #stampsContainer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none;
-            z-index: 1;
-            overflow: hidden;
-        }
+      /* Button depth (base & shadows) */
+      --btn-base: #000000;
+      --btn-shadow: #000000;
+      --btn-highlight: #000000;
 
-        .stamp {
-            position: absolute;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 8px;
-            width: max-content;
-            transition: opacity 0.5s ease-out;
-        }
+      /* Screen bezel */
+      --bezel-light: #b5b5b5;
+      --bezel-dark: #b4b4b4;
+      --bezel-base: #000000;
 
-        .stamp-row-small {
-            display: grid;
-            grid-template-rows: repeat(5, 1fr);
-            gap: 1px;
-        }
+      /* Screen display */
+      --screen-bg: #111311;
+      --screen-text: #f2f2f2;
+      --screen-glow: #ffffff;
 
-        .stamp-row-small .stamp-pixel {
-            width: 3px;
-            height: 3px;
-        }
+      /* Loading fill */
+      --fill-color: #ffffff;
+      --fill-glow: #ffffff;
 
-        .stamp-row-large {
-            display: grid;
-            grid-template-rows: repeat(5, 1fr);
-            gap: 1px;
-        }
+      /* Scanline */
+      --scanline: #000000;
 
-        .stamp-row-large .stamp-pixel {
-            width: 6px;
-            height: 6px;
-        }
+      /* Pressed highlight */
+      --btn-highlight-pressed: #a22f2f;
 
-        .stamp-pixel {
-            background: #000;
-            border-radius: 50%;
-            opacity: 0;
-            transition: opacity 0.05s linear;
-        }
+      /* Button dimensions */
+      --btn-elevation: 6;
+      --btn-press-depth: 0.975;
+    }
 
-        .stamp-loading-container {
-            display: grid;
-            gap: 1px;
-            margin-top: 4px;
-            transition: opacity 0.3s;
-        }
+    body {
+      width: 100%;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.92rem;
+      background-color: var(--bg-color);
+      font-family: "Inter", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow: hidden;
+      position: relative;
+    }
 
-        @keyframes fillPixel {
-            to {
-                opacity: 1;
-            }
-        }
+    /* ==================== BUTTON ==================== */
+    .btn-area {
+      position: absolute;
+      top: 60%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(1.30);
+    }
 
-        .loading-pixel {
-            width: 6px;
-            height: 6px;
-            background: #000;
-            border-radius: 50%;
-            opacity: 0;
-            animation: fillPixel 0s linear forwards;
-        }
+    #knock-btn {
+      all: unset;
+      cursor: pointer;
+      -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+      position: relative;
+      border-radius: 999vw;
+      background-color: color-mix(in srgb, var(--btn-base) 75%, transparent);
+      box-shadow: -0.15em -0.15em 0.15em -0.075em color-mix(in srgb, var(--btn-shadow) 25%, transparent),
+          0.0375em 0.0375em 0.0675em 0 color-mix(in srgb, var(--btn-shadow) 10%, transparent);
+      transform: translateY(calc(var(--btn-elevation) * -1px));
+      transition: transform 300ms ease;
+    }
 
-        .center-instruction {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-family: 'Silkscreen', cursive;
-            font-size: 16px;
-            color: #000;
-            pointer-events: none;
-            z-index: 0;
-            transition: opacity 0.3s;
-        }
+    #knock-btn.pressed {
+      pointer-events: none;
+      transform: translateY(0px);
+    }
 
-        .learn-btn,
-        .close-icon,
-        #backdrop {
-            cursor: pointer;
-        }
+    #knock-btn::after {
+      content: "";
+      position: absolute;
+      z-index: 0;
+      width: calc(100% + 0.3em);
+      height: calc(100% + 0.3em);
+      top: -0.15em;
+      left: -0.15em;
+      border-radius: inherit;
+      background: linear-gradient(-135deg,
+              color-mix(in srgb, var(--btn-shadow) 50%, transparent),
+              transparent 20%,
+              transparent 100%);
+      filter: blur(0.0125em);
+      opacity: 0.25;
+      mix-blend-mode: multiply;
+    }
 
-        .online-count {
-            position: fixed;
-            bottom: 40px;
-            left: 0;
-            width: 100%;
-            text-align: center;
-            font-size: 12px;
-            color: #999;
-            font-weight: 500;
-            pointer-events: none;
-            z-index: 10;
-            background: transparent;
-            padding: 0;
-        }
+    #knock-btn .button-outer {
+      position: relative;
+      z-index: 1;
+      border-radius: inherit;
+      transition: box-shadow 300ms ease;
+      will-change: box-shadow;
+      box-shadow: 0 0.05em 0.05em -0.01em var(--btn-shadow),
+          0 0.01em 0.01em -0.01em color-mix(in srgb, var(--btn-shadow) 50%, transparent),
+          0.15em 0.3em 0.1em -0.01em color-mix(in srgb, var(--btn-shadow) 25%, transparent);
+    }
 
-        .online-count span {
-            color: #00e000;
-            font-size: 14px;
-            vertical-align: middle;
-        }
+    #knock-btn.pressed .button-outer {
+      box-shadow: 0 0 0 0 var(--btn-shadow), 0 0 0 0 color-mix(in srgb, var(--btn-shadow) 50%, transparent),
+          0 0 0 0 color-mix(in srgb, var(--btn-shadow) 25%, transparent);
+    }
 
-        .learn-btn {
-            position: absolute;
-            top: 40px;
-            right: 40px;
-            font-size: 12px;
-            font-family: inherit;
-            border: none;
-            cursor: pointer;
-            text-decoration: underline;
-            color: #666;
-            z-index: 10;
-            background: transparent;
-            padding: 30px;
-            margin-top: -30px;
-            margin-right: -30px;
-        }
+    .button-inner {
+      --inset: 0.035em;
+      position: relative;
+      z-index: 1;
+      border-radius: inherit;
+      width: 9.1em;
+      height: 9.1em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-image: linear-gradient(135deg, var(--btn-light), var(--btn-dark));
+      transition: box-shadow 300ms ease, clip-path 250ms ease,
+          background-image 250ms ease, transform 250ms ease;
+      will-change: box-shadow, clip-path, background-image, transform;
+      overflow: clip;
+      clip-path: inset(0 0 0 0 round 999vw);
+      box-shadow:
+          0 0 0 0 inset color-mix(in srgb, var(--btn-shadow) 10%, transparent),
+          -0.05em -0.05em 0.05em 0 inset color-mix(in srgb, var(--btn-shadow) 25%, transparent),
+          0 0 0 0 inset color-mix(in srgb, var(--btn-shadow) 10%, transparent),
+          0 0 0.05em 0.2em inset color-mix(in srgb, var(--btn-highlight) 25%, transparent),
+          0.025em 0.05em 0.1em 0 inset var(--btn-highlight),
+          0.12em 0.12em 0.12em inset color-mix(in srgb, var(--btn-highlight) 25%, transparent),
+          -0.075em -0.25em 0.25em 0.1em inset color-mix(in srgb, var(--btn-shadow) 25%, transparent);
+    }
 
-        .learn-btn:hover {
-            color: #000;
-        }
+    #knock-btn.pressed .button-inner {
+      clip-path: inset(clamp(1px, 0.0625em, 2px) clamp(1px, 0.0625em, 2px) clamp(1px, 0.0625em, 2px) clamp(1px, 0.0625em, 2px) round 999vw);
+      transform: scale(var(--btn-press-depth));
+      box-shadow:
+          0.1em 0.15em 0.05em 0 inset color-mix(in srgb, var(--btn-shadow) 75%, transparent),
+          -0.025em -0.03em 0.05em 0.025em inset color-mix(in srgb, var(--btn-shadow) 50%, transparent),
+          0.25em 0.25em 0.2em 0 inset color-mix(in srgb, var(--btn-shadow) 50%, transparent),
+          0 0 0.05em 0.5em inset color-mix(in srgb, var(--btn-highlight-pressed) 15%, transparent),
+          0 0 0 0 inset var(--btn-highlight-pressed),
+          0.12em 0.12em 0.12em inset color-mix(in srgb, var(--btn-highlight-pressed) 25%, transparent),
+          -0.075em -0.12em 0.2em 0.1em inset color-mix(in srgb, var(--btn-shadow) 25%, transparent);
+    }
 
-        /* Slide Pane */
-        .panel-backdrop {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.9);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-            z-index: 100;
-        }
+    #knock-btn .button-inner span {
+      position: relative;
+      z-index: 4;
+      font-family: "DIN Alternate", "DIN Condensed", "DIN", sans-serif;
+      font-size: 0.60em;
+      letter-spacing: -0.05em;
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0);
+      background-image: linear-gradient(135deg, var(--text-light), var(--text-dark));
+      -webkit-background-clip: text;
+      background-clip: text;
+      transition: transform 250ms ease;
+      display: block;
+      will-change: transform;
+      text-shadow: color-mix(in srgb, var(--btn-shadow) 10%, transparent) 0 0 0.1em;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
 
-        .panel-backdrop.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
+    #knock-btn.pressed .button-inner span {
+      transform: scale(var(--btn-press-depth));
+    }
 
-        .side-panel {
-            position: fixed;
-            top: 0;
-            right: 0;
-            width: 320px;
-            height: 100%;
-            background: #000;
-            border-left: 1px solid #333;
-            transform: translateX(100%);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 101;
-            padding: 60px 40px;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            color: #fff;
-        }
 
-        .side-panel.active {
-            transform: translateX(0);
-        }
+    /* ==================== TERMINAL SCREEN ==================== */
+    .screen-area {
+      position: absolute;
+      top: 15%;
+      left: 50%;
+      transform: translateX(-50%);
+    }
 
-        .close-icon {
-            position: absolute;
-            top: 40px;
-            right: 40px;
-            cursor: pointer;
-            font-size: 28px;
-            line-height: 1;
-            color: #fff;
-            padding: 20px;
-            margin-top: -20px;
-            margin-right: -20px;
-        }
-    </style>
+    .terminal-bezel {
+      width: 240px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-sizing: border-box;
+      position: relative;
+      background-color: color-mix(in srgb, var(--bezel-base) 75%, transparent);
+      box-shadow: -0.15em -0.15em 0.15em -0.075em color-mix(in srgb, var(--btn-shadow) 25%, transparent),
+          0.0375em 0.0375em 0.0675em 0 color-mix(in srgb, var(--btn-shadow) 10%, transparent);
+      font-size: 1.92rem;
+    }
+
+    .terminal-bezel::after {
+      content: "";
+      position: absolute;
+      z-index: 0;
+      width: calc(100% + 0.3em);
+      height: calc(100% + 0.3em);
+      top: -0.15em;
+      left: -0.15em;
+      border-radius: inherit;
+      background: linear-gradient(-135deg,
+              color-mix(in srgb, var(--btn-shadow) 50%, transparent),
+              transparent 20%,
+              transparent 100%);
+      filter: blur(0.0125em);
+      opacity: 0.25;
+      mix-blend-mode: multiply;
+    }
+
+    .terminal-outer {
+      position: relative;
+      z-index: 1;
+      border-radius: inherit;
+      box-shadow: 0 0.05em 0.05em -0.01em var(--btn-shadow),
+          0 0.01em 0.01em -0.01em color-mix(in srgb, var(--btn-shadow) 50%, transparent),
+          0.15em 0.3em 0.1em -0.01em color-mix(in srgb, var(--btn-shadow) 25%, transparent);
+    }
+
+    .terminal-inner {
+      position: relative;
+      z-index: 1;
+      border-radius: inherit;
+      background-image: linear-gradient(135deg, var(--bezel-light), var(--bezel-dark));
+      overflow: clip;
+      clip-path: inset(0 0 0 0 round 12px);
+      box-shadow:
+          0 0 0 0 inset color-mix(in srgb, var(--btn-shadow) 10%, transparent),
+          -0.05em -0.05em 0.05em 0 inset color-mix(in srgb, var(--btn-shadow) 25%, transparent),
+          0 0 0 0 inset color-mix(in srgb, var(--btn-shadow) 10%, transparent),
+          0 0 0.05em 0.2em inset color-mix(in srgb, var(--btn-highlight) 25%, transparent),
+          0.025em 0.05em 0.1em 0 inset var(--btn-highlight),
+          0.12em 0.12em 0.12em inset color-mix(in srgb, var(--btn-highlight) 25%, transparent),
+          -0.075em -0.25em 0.25em 0.1em inset color-mix(in srgb, var(--btn-shadow) 25%, transparent);
+    }
+
+    .terminal {
+      width: 100%;
+      height: 60px;
+      border-radius: inherit;
+      box-sizing: border-box;
+      background: var(--screen-bg);
+      box-shadow:
+        inset 0 2px 6px rgba(0, 0, 0, 0.7),
+        inset 0 -1px 3px rgba(0, 0, 0, 0.3),
+        inset 0 0 20px color-mix(in srgb, var(--screen-bg) 50%, transparent);
+      position: relative;
+      overflow: hidden;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      font-family: 'Silkscreen', monospace;
+      font-size: 12px;
+      letter-spacing: 1px;
+      color: var(--screen-text);
+      image-rendering: pixelated;
+    }
+
+    /* Scanlines */
+    .terminal::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        color-mix(in srgb, var(--scanline) 10%, transparent) 2px,
+        color-mix(in srgb, var(--scanline) 10%, transparent) 4px
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .terminal-lines {
+      position: relative;
+      z-index: 5;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      position: relative;
+      z-index: 5;
+      mix-blend-mode: difference;
+    }
+
+    /* Screen fill bar */
+    .terminal-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 0%;
+      background: var(--fill-color);
+      z-index: 3;
+      transition: width 5s linear;
+    }
+
+    .terminal-lines .line {
+      display: none;
+    }
+    .terminal-lines .line:last-child {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      animation: einkFade 0.3s ease forwards;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22cc55;
+      box-shadow: 0 0 4px #22cc55, 0 0 8px rgba(34, 204, 85, 0.4);
+      flex-shrink: 0;
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes dotPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    @keyframes sharpBlink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    @keyframes einkFade {
+      0%   { opacity: 0.3; filter: blur(0.5px); }
+      100% { opacity: 1; filter: blur(0); }
+    }
+
+    /* ==================== CONTROLS ==================== */
+    .controls {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 100;
+      background: rgba(30, 30, 30, 0.92);
+      backdrop-filter: blur(12px);
+      border-radius: 12px;
+      padding: 16px;
+      width: 200px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      color: #aaa;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .controls h3 {
+      margin: 0 0 10px;
+      font-size: 11px;
+      color: #fff;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .controls .section {
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .controls .section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .controls .section-title {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .controls .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .controls .row label {
+      flex: 1;
+      color: #999;
+    }
+    .controls .row input[type="checkbox"] {
+      accent-color: #888;
+      cursor: pointer;
+    }
+    .controls .row input[type="range"] {
+      width: 80px;
+      height: 4px;
+      accent-color: #888;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .controls .row select {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 4px;
+      color: #ccc;
+      font-size: 9px;
+      padding: 2px 4px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+    }
+    .controls .row .val {
+      font-family: 'SF Mono', 'Menlo', monospace;
+      font-size: 9px;
+      color: #777;
+      width: 36px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .controls .row input[type="color"] {
+      width: 24px;
+      height: 20px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 4px;
+      background: none;
+      cursor: pointer;
+      padding: 0;
+      flex-shrink: 0;
+    }
+    .controls .row .hex {
+      font-family: 'SF Mono', 'Menlo', monospace;
+      font-size: 9px;
+      color: #777;
+      width: 58px;
+      text-align: right;
+      flex-shrink: 0;
+      user-select: all;
+      cursor: text;
+    }
+
+    .controls.hidden {
+      display: none;
+    }
+
+    /* ==================== LEARN MORE ==================== */
+    .learn-more-btn {
+      all: unset;
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      color: rgba(0, 0, 0, 0.35);
+      transition: color 0.2s;
+      user-select: none;
+      z-index: 50;
+    }
+    .learn-more-btn:hover {
+      color: rgba(0, 0, 0, 0.6);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      will-change: opacity;
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: #111;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      padding: 32px 36px;
+      max-width: 360px;
+      width: 90%;
+      position: relative;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+      transform: scale(0.96) translateY(8px);
+      transition: transform 0.15s ease;
+      will-change: transform;
+    }
+    .modal-overlay.active .modal {
+      transform: scale(1) translateY(0);
+    }
+    .modal h4 {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      color: #fff;
+      margin: 0 0 8px;
+    }
+    .modal p {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      line-height: 1.65;
+      color: rgba(255,255,255,0.55);
+      margin: 0 0 12px;
+      font-weight: 400;
+    }
+    .modal p:last-of-type {
+      margin-bottom: 0;
+    }
+    .modal img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      object-position: center 60%;
+      border-radius: 8px;
+      margin-bottom: 32px;
+      display: block;
+    }
+    .modal-close {
+      all: unset;
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      cursor: pointer;
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+      transition: color 0.2s;
+      line-height: 1;
+      z-index: 1;
+    }
+    .modal-close:hover {
+      color: rgba(255,255,255,0.9);
+    }
+
+  </style>
 </head>
-
 <body>
 
-    <button class="learn-btn" id="learnToggle">learn more</button>
 
-    <div class="panel-backdrop" id="backdrop"></div>
-    <div class="side-panel" id="panel">
-        <div class="close-icon" id="closeBtn">×</div>
-        <p style="font-size: 13px; line-height: 1.6; color: #fff; margin: 0;">
-            When you click the button, a small device knocks on a piece of wood somewhere else. The wood is real, the
-            knock is real, but it happens remotely.
-            <br><br>
-            Multiple pieces of wood are connected to the system in different locations. Each time someone clicks, one of
-            them gets knocked on.
-        </p>
+  <div class="controls hidden" id="controls">
+    <h3>Color Controls</h3>
+
+    <div class="section">
+      <div class="section-title">Page</div>
+      <div class="row"><label>Background</label><input type="color" data-var="--bg-color" value="#ededed" /><span class="hex">#ededed</span></div>
     </div>
 
-    <!-- Data passed from Python is injected here -->
-    <div class="online-count">{{ online_count }} {% if online_count == 1 %}Device{% else %}Devices{% endif %} Online
-        <span>●</span>
+    <div class="section">
+      <div class="section-title">Button Surface</div>
+      <div class="row"><label>Shape</label><select id="btn-shape"><option value="circle" selected>Circle</option><option value="pill">Pill</option></select></div>
+      <div class="row"><label>Scale</label><input type="range" id="btn-scale" min="0.5" max="2" step="0.05" value="1.30" /><span class="val">1.30</span></div>
+      <div class="row"><label>Elevation</label><input type="range" id="btn-elevation" min="0" max="20" step="1" value="6" /><span class="val">6</span></div>
+      <div class="row"><label>Press Depth</label><input type="range" id="btn-press-depth" min="0.9" max="1" step="0.005" value="0.975" /><span class="val">0.975</span></div>
+      <div class="row"><label>Shadow Length</label><input type="range" id="shadow-length" min="0" max="1" step="0.05" value="0.35" /><span class="val">0.35</span></div>
+      <div class="row"><label>Shadow Angle</label><input type="range" id="shadow-angle" min="0" max="360" step="1" value="120" /><span class="val">120°</span></div>
+      <div class="row"><label>Gradient Light</label><input type="color" data-var="--btn-light" value="#ff3d3d" /><span class="hex">#ff3d3d</span></div>
+      <div class="row"><label>Gradient Dark</label><input type="color" data-var="--btn-dark" value="#d60e00" /><span class="hex">#d60e00</span></div>
+      <div class="row"><label>Shadow</label><input type="color" data-var="--btn-shadow" value="#000000" /><span class="hex">#000000</span></div>
+      <div class="row"><label>Highlight</label><input type="color" data-var="--btn-highlight" value="#000000" /><span class="hex">#000000</span></div>
+      <div class="row"><label>Pressed Highlight</label><input type="color" data-var="--btn-highlight-pressed" value="#a22f2f" /><span class="hex">#a22f2f</span></div>
+      <div class="row"><label>Base</label><input type="color" data-var="--btn-base" value="#000000" /><span class="hex">#000000</span></div>
     </div>
 
-    <div class="center-instruction" id="centerInst">Tap to send knock</div>
-    <div id="stampsContainer"></div>
-    <div id="inkCursor">[ KNOCK ]</div>
+    <div class="section">
+      <div class="section-title">Button Text</div>
+      <div class="row"><label>Show Text</label><input type="checkbox" id="toggle-text" checked /></div>
+      <div class="row"><label>Copy</label><select id="txt-copy"><option value="KNOCK">Knock</option><option value="KNOCK ON WOOD" selected>Knock On Wood</option></select></div>
+      <div class="row"><label>Scale</label><input type="range" id="txt-scale" min="0.5" max="3" step="0.05" value="0.60" /><span class="val">0.60</span></div>
+      <div class="row"><label>Spacing</label><input type="range" id="txt-spacing" min="-0.1" max="0.3" step="0.01" value="-0.05" /><span class="val">-0.05</span></div>
+      <div class="row"><label>Weight</label><input type="range" id="txt-weight" min="100" max="900" step="100" value="500" /><span class="val">500</span></div>
+      <div class="row"><label>Transform</label><select id="txt-transform"><option value="none">None</option><option value="uppercase" selected>Uppercase</option><option value="lowercase">Lowercase</option><option value="capitalize">Capitalize</option></select></div>
+      <div class="row"><label>Text Light</label><input type="color" data-var="--text-light" value="#ffffff" /><span class="hex">#ffffff</span></div>
+      <div class="row"><label>Text Dark</label><input type="color" data-var="--text-dark" value="#ffffff" /><span class="hex">#ffffff</span></div>
+    </div>
 
-    <script>
-        const font = {
-            '0': ['010', '101', '101', '101', '010'], '1': ['010', '110', '010', '010', '111'],
-            '2': ['110', '001', '010', '100', '111'], '3': ['110', '001', '010', '001', '110'],
-            '4': ['101', '101', '111', '001', '001'], '5': ['111', '100', '110', '001', '110'],
-            '6': ['011', '100', '110', '101', '010'], '7': ['111', '001', '010', '010', '010'],
-            '8': ['010', '101', '010', '101', '010'], '9': ['010', '101', '011', '001', '010'],
-            ':': ['000', '010', '000', '010', '000'], 'A': ['010', '101', '111', '101', '101'],
-            'B': ['110', '101', '110', '101', '110'], 'C': ['011', '100', '100', '100', '011'],
-            'D': ['110', '101', '101', '101', '110'], 'E': ['111', '100', '111', '100', '111'],
-            'F': ['111', '100', '110', '100', '100'], 'G': ['011', '100', '101', '101', '011'],
-            'H': ['101', '101', '111', '101', '101'], 'I': ['111', '010', '010', '010', '111'],
-            'J': ['001', '001', '001', '101', '010'], 'K': ['101', '110', '100', '110', '101'],
-            'L': ['100', '100', '100', '100', '111'], 'M': ['101', '111', '101', '101', '101'],
-            'N': ['110', '101', '101', '101', '101'], 'O': ['010', '101', '101', '101', '010'],
-            'P': ['110', '101', '110', '100', '100'], 'Q': ['010', '101', '101', '011', '001'],
-            'R': ['110', '101', '110', '101', '101'], 'S': ['011', '100', '010', '001', '110'],
-            'T': ['111', '010', '010', '010', '010'], 'U': ['101', '101', '101', '101', '011'],
-            'V': ['101', '101', '101', '101', '010'], 'W': ['101', '101', '101', '111', '101'],
-            'X': ['101', '101', '010', '101', '101'], 'Y': ['101', '101', '010', '010', '010'],
-            'Z': ['111', '001', '010', '100', '111'], ' ': ['000', '000', '000', '000', '000'],
-            '#': ['010', '111', '010', '111', '010'], '-': ['000', '000', '111', '000', '000']
-        };
+    <div class="section">
+      <div class="section-title">Screen Bezel</div>
+      <div class="row"><label>Bezel Light</label><input type="color" data-var="--bezel-light" value="#b5b5b5" /><span class="hex">#b5b5b5</span></div>
+      <div class="row"><label>Bezel Dark</label><input type="color" data-var="--bezel-dark" value="#b4b4b4" /><span class="hex">#b4b4b4</span></div>
+      <div class="row"><label>Bezel Base</label><input type="color" data-var="--bezel-base" value="#000000" /><span class="hex">#000000</span></div>
+    </div>
 
-        const cursor = document.getElementById('inkCursor');
-        const stampsContainer = document.getElementById('stampsContainer');
-        cursor.innerText = '[ KNOCK ]';
+    <div class="section">
+      <div class="section-title">Screen Display</div>
+      <div class="row"><label>Background</label><input type="color" data-var="--screen-bg" value="#111311" /><span class="hex">#111311</span></div>
+      <div class="row"><label>Text</label><input type="color" data-var="--screen-text" value="#f2f2f2" /><span class="hex">#f2f2f2</span></div>
+      <div class="row"><label>Glow</label><input type="color" data-var="--screen-glow" value="#ffffff" /><span class="hex">#ffffff</span></div>
+      <div class="row"><label>Scanline</label><input type="color" data-var="--scanline" value="#000000" /><span class="hex">#000000</span></div>
+    </div>
 
-        let activeKnocks = 0;
-        let cursorMoved = false;
-        let isTouch = false;
-        const pastStamps = [];
+    <div class="section">
+      <div class="section-title">Loading Bar</div>
+      <div class="row"><label>Thickness</label><input type="range" id="fill-thickness" min="2" max="20" step="1" value="6" /><span class="val">6</span></div>
+      <div class="row"><label>Fill Color</label><input type="color" data-var="--fill-color" value="#ffffff" /><span class="hex">#ffffff</span></div>
+      <div class="row"><label>Fill Glow</label><input type="color" data-var="--fill-glow" value="#ffffff" /><span class="hex">#ffffff</span></div>
+    </div>
+  </div>
 
-        let isHolding = false;
-        let isQueueMode = false;
-        let queuedKnocks = 1;
-        let holdTimeout;
-        let dragAccumulator = 0;
-        let lastX = 0;
-        let lastY = 0;
+  <div class="btn-area">
+    <button id="knock-btn">
+      <div class="button-outer">
+        <div class="button-inner">
+          <span>KNOCK ON WOOD</span>
+        </div>
+      </div>
+    </button>
+  </div>
 
-        // Track mouse position
-        window.addEventListener('pointermove', (e) => {
-            if (e.pointerType === 'mouse') {
-                if (!cursorMoved) {
-                    cursorMoved = true;
-                    cursor.style.opacity = '1';
-                    cursor.style.transform = 'translate(-50%, -50%)';
-                }
-                cursor.style.left = e.clientX + 'px';
-                cursor.style.top = e.clientY + 'px';
-            } else if (isHolding) {
-                cursor.style.left = e.clientX + 'px';
-                cursor.style.top = e.clientY + 'px';
+  <div class="screen-area">
+    <div class="terminal-bezel">
+      <div class="terminal-outer">
+        <div class="terminal-inner">
+          <div class="terminal">
+            <div class="terminal-fill" id="terminal-fill"></div>
+            <div class="terminal-lines" id="terminal">
+              <div class="line"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;min-width:22px;border-radius:50%;background:#fff;color:#000;font-size:12px;font-weight:700;margin-right:6px;font-family:system-ui;animation:sharpBlink 1s step-end infinite">{{ online_count }}</span> KNOCKERS ONLINE</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="learn-more-btn" id="learn-more">Learn More</button>
+
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <button class="modal-close" id="modal-close">✕</button>
+      <img src="/static/knocker-device.gif" alt="Knocker device strapped to a tree" />
+      <h4>How it works</h4>
+      <p>Press the button. A device somewhere else physically knocks on a piece of wood.</p>
+    </div>
+  </div>
+
+
+  <script>
+    const btn = document.getElementById('knock-btn');
+    const terminal = document.getElementById('terminal');
+    const termFill = document.getElementById('terminal-fill');
+    let knockCount = 0;
+
+    function setLine(text, showDot) {
+      const line = document.createElement('div');
+      line.className = 'line';
+      if (showDot) {
+        const dot = document.createElement('span');
+        dot.className = 'status-dot';
+        line.appendChild(dot);
+      }
+      line.appendChild(document.createTextNode(text));
+      terminal.appendChild(line);
+      while (terminal.children.length > 2) {
+        terminal.removeChild(terminal.firstChild);
+      }
+    }
+
+
+    function clearAnim() {
+      termFill.style.transition = 'none';
+      termFill.style.width = '0%';
+    }
+
+    const onlineCount = parseInt('{{ online_count }}') || 0;
+    let isKnocking = false;
+
+    btn.addEventListener('click', async () => {
+      if (isKnocking) return;
+      isKnocking = true;
+      btn.classList.add('pressed');
+      knockCount++;
+      clearAnim();
+
+      // Phase 1: SENDING
+      setLine('SENDING KNOCK...');
+      termFill.style.transition = 'width 0.15s ease';
+      termFill.style.width = '33%';
+
+      try {
+        const response = await fetch('/api/queue-knock', { method: 'POST' });
+        const data = await response.json();
+        const jobId = data.job_id;
+
+        let assignedShown = false;
+
+        const pollInterval = setInterval(async () => {
+          try {
+            const statusResp = await fetch('/api/job-status/' + jobId);
+            const job = await statusResp.json();
+
+            if (job.status === 'assigned' && !assignedShown) {
+              assignedShown = true;
+              setLine('KNOCKING...');
+              termFill.style.width = '66%';
             }
+            else if (job.status === 'completed') {
+              clearInterval(pollInterval);
+              termFill.style.width = '100%';
 
-            if (isQueueMode) {
-                let dx = e.clientX - lastX;
-                let dy = e.clientY - lastY;
-                dragAccumulator += (dx - dy); // right and up increases
-                if (Math.abs(dragAccumulator) > 10) {
-                    let step = Math.sign(dragAccumulator) * Math.floor(Math.abs(dragAccumulator) / 10);
-                    queuedKnocks += step;
-                    dragAccumulator -= step * 10;
-                    if (queuedKnocks > 10) queuedKnocks = 10;
-                    if (queuedKnocks < 1) queuedKnocks = 1;
-                    cursor.innerText = `x${String(queuedKnocks).padStart(2, '0')}`;
-                    if (navigator.vibrate) navigator.vibrate(5);
-                }
+              const unitId = job.worker ? job.worker.replace(/:/g, '').slice(-4).toUpperCase() : '??';
+
+              setTimeout(() => {
+                const line = document.createElement('div');
+                line.className = 'line';
+                line.innerHTML = '<span style="font-size:1.6em;line-height:1;vertical-align:middle">\u2714</span> UNIT ' + unitId;
+                terminal.appendChild(line);
+                while (terminal.children.length > 2) terminal.removeChild(terminal.firstChild);
+                btn.classList.remove('pressed');
+              }, 300);
+
+              setTimeout(() => {
+                clearAnim();
+                showOnline();
+                isKnocking = false;
+              }, 2000);
             }
-            lastX = e.clientX;
-            lastY = e.clientY;
-        });
+          } catch (e) {
+            clearInterval(pollInterval);
+            setLine('ERROR');
+            clearAnim();
+            btn.classList.remove('pressed');
+            isKnocking = false;
+          }
+        }, 1000);
 
-        window.addEventListener('wheel', (e) => {
-            if (isQueueMode) {
-                let delta = e.deltaY;
-                if (delta > 0) queuedKnocks--;
-                else queuedKnocks++;
-                if (queuedKnocks > 10) queuedKnocks = 10;
-                if (queuedKnocks < 1) queuedKnocks = 1;
-                cursor.innerText = `x${String(queuedKnocks).padStart(2, '0')}`;
-                if (navigator.vibrate) navigator.vibrate(5);
-            }
-        });
+      } catch (error) {
+        setLine('CONNECTION ERROR');
+        clearAnim();
+        btn.classList.remove('pressed');
+        isKnocking = false;
+      }
+    });
 
-        let globalAudioCtx = null;
-        let audioUnlocked = false;
+    function showOnline() {
+      const line = document.createElement('div');
+      line.className = 'line';
+      line.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;min-width:22px;border-radius:50%;background:#fff;color:#000;font-size:12px;font-weight:700;margin-right:6px;font-family:system-ui;animation:sharpBlink 1s step-end infinite">' + onlineCount + '</span> KNOCKERS ONLINE';
+      terminal.appendChild(line);
+      while (terminal.children.length > 2) terminal.removeChild(terminal.firstChild);
+    }
 
-        function unlockAudio() {
-            if (!globalAudioCtx) {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (!AudioContext) return;
-                globalAudioCtx = new AudioContext();
-            }
-            if (globalAudioCtx.state === 'suspended') {
-                globalAudioCtx.resume();
-            }
-            if (!audioUnlocked && globalAudioCtx) {
-                const buffer = globalAudioCtx.createBuffer(1, 1, 22050);
-                const source = globalAudioCtx.createBufferSource();
-                source.buffer = buffer;
-                source.connect(globalAudioCtx.destination);
-                if (source.start) source.start(0);
-                else if (source.noteOn) source.noteOn(0);
-                audioUnlocked = true;
-            }
-        }
+    // ==================== COLOR CONTROLS ====================
+    const root = document.documentElement;
+    const controls = document.getElementById('controls');
 
-        // Synthetic Thud using Web Audio API
-        function playThud() {
-            if (!globalAudioCtx) return;
-            if (globalAudioCtx.state === 'suspended') {
-                globalAudioCtx.resume();
-            }
-            const ctx = globalAudioCtx;
-            const now = ctx.currentTime;
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
+    document.body.addEventListener('dblclick', (e) => {
+      if (e.target === document.body) {
+        controls.classList.toggle('hidden');
+      }
+    });
 
-            osc.connect(gain);
-            gain.connect(ctx.destination);
+    document.getElementById('btn-scale').addEventListener('input', (e) => {
+      document.querySelector('.btn-area').style.transform = 'translate(-50%, -50%) scale(' + e.target.value + ')';
+      e.target.nextElementSibling.textContent = parseFloat(e.target.value).toFixed(2);
+    });
 
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(120, now);
-            osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.15);
+    document.getElementById('toggle-text').addEventListener('change', (e) => {
+      document.querySelector('#knock-btn .button-inner span').style.visibility = e.target.checked ? 'visible' : 'hidden';
+    });
 
-            gain.gain.setValueAtTime(1, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+    const btnSpan = document.querySelector('#knock-btn .button-inner span');
 
-            osc.start(now);
-            osc.stop(now + 0.2);
-        }
+    document.getElementById('txt-scale').addEventListener('input', (e) => {
+      btnSpan.style.fontSize = e.target.value + 'em';
+      e.target.nextElementSibling.textContent = parseFloat(e.target.value).toFixed(2);
+    });
 
-        // Helper to convert string to pixel grid array
-        function stringToGrid(str, targetCols) {
-            const grid = [];
-            for (let r = 0; r < 5; r++) {
-                let row = "";
-                for (let char of str) {
-                    row += (font[char] || font[' '])[r] + "0";
-                }
-                grid.push(row.slice(0, targetCols));
-            }
-            return grid;
-        }
+    document.getElementById('txt-copy').addEventListener('change', (e) => {
+      btnSpan.textContent = e.target.value;
+    });
 
-        // Handle Knocks (ASYNC API CALL)
-        async function triggerKnock(clientX, clientY) {
-            if (navigator.vibrate) navigator.vibrate(50);
-            playThud();
+    document.getElementById('txt-spacing').addEventListener('input', (e) => {
+      btnSpan.style.letterSpacing = e.target.value + 'em';
+      e.target.nextElementSibling.textContent = parseFloat(e.target.value).toFixed(2);
+    });
 
-            const now = new Date();
-            let hours12 = now.getHours() % 12 || 12;
-            const hours = String(hours12).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            const timeStr = `${hours}:${minutes}:${seconds}`;
+    document.getElementById('txt-weight').addEventListener('input', (e) => {
+      btnSpan.style.fontWeight = e.target.value;
+      e.target.nextElementSibling.textContent = e.target.value;
+    });
 
-            // Fixed widths for strings: "#XXXX" (5 chars) and "HH:MM:SS" (8 chars)
-            const topCols = 5 * 4 - 1;   
-            const bottomCols = 8 * 4 - 1; 
+    document.getElementById('txt-transform').addEventListener('change', (e) => {
+      btnSpan.style.textTransform = e.target.value;
+    });
 
-            document.getElementById('centerInst').style.opacity = '0';
+    const btnInner = document.querySelector('.button-inner');
+    document.getElementById('btn-shape').addEventListener('change', (e) => {
+      if (e.target.value === 'circle') {
+        btnInner.style.width = '9.1em';
+        btnInner.style.height = '9.1em';
+        btnInner.style.padding = '0';
+      } else {
+        btnInner.style.width = 'auto';
+        btnInner.style.height = 'auto';
+        btnInner.style.padding = '1em 1.5em';
+      }
+    });
 
-            // Generate visual stamp container
-            const stamp = document.createElement('div');
-            stamp.className = 'stamp';
+    document.getElementById('btn-elevation').addEventListener('input', (e) => {
+      root.style.setProperty('--btn-elevation', e.target.value);
+      e.target.nextElementSibling.textContent = e.target.value;
+    });
 
-            const topGridContainer = document.createElement('div');
-            topGridContainer.className = 'stamp-row-small';
-            topGridContainer.style.gridTemplateColumns = `repeat(${topCols}, 1fr)`;
+    document.getElementById('btn-press-depth').addEventListener('input', (e) => {
+      root.style.setProperty('--btn-press-depth', e.target.value);
+      e.target.nextElementSibling.textContent = e.target.value;
+    });
 
-            const bottomGridContainer = document.createElement('div');
-            bottomGridContainer.className = 'stamp-row-large';
-            bottomGridContainer.style.gridTemplateColumns = `repeat(${bottomCols}, 1fr)`;
+    document.getElementById('fill-thickness').addEventListener('input', (e) => {
+      root.style.setProperty('--fill-thickness', e.target.value + 'px');
+      e.target.nextElementSibling.textContent = e.target.value;
+    });
 
-            // Positioning Logic
-            const rotation = (Math.random() * 10) - 5;
-            let baseX = clientX + (Math.random() * 6 - 3);
-            let baseY = clientY + (Math.random() * 6 - 3);
+    // Shadow length & angle
+    let shadowLength = 0.35;
+    let shadowAngle = 120;
+    const btnOuter = document.querySelector('.button-outer');
 
-            let overlap = true;
-            let spiralRadius = 0;
-            let spiralAngle = 0;
+    function updateShadow() {
+      const rad = shadowAngle * Math.PI / 180;
+      const x = (Math.cos(rad) * shadowLength).toFixed(3);
+      const y = (Math.sin(rad) * shadowLength).toFixed(3);
+      const blur = (shadowLength * 0.3).toFixed(3);
+      btnOuter.style.boxShadow =
+        '0 0.05em 0.05em -0.01em var(--btn-shadow), ' +
+        '0 0.01em 0.01em -0.01em color-mix(in srgb, var(--btn-shadow) 50%, transparent), ' +
+        x + 'em ' + y + 'em ' + blur + 'em -0.01em color-mix(in srgb, var(--btn-shadow) 25%, transparent)';
+    }
 
-            while (overlap && spiralRadius < 800) {
-                overlap = false;
-                for (const pos of pastStamps) {
-                    const dx = baseX - pos.x;
-                    const dy = baseY - pos.y;
-                    if (Math.sqrt(dx * dx + dy * dy) < 120) {
-                        overlap = true;
-                        break;
-                    }
-                }
-                if (overlap) {
-                    spiralAngle += 0.5;
-                    spiralRadius += 2;
-                    baseX = clientX + Math.cos(spiralAngle) * spiralRadius;
-                    baseY = clientY + Math.sin(spiralAngle) * spiralRadius;
-                }
-            }
-            pastStamps.push({ x: baseX, y: baseY });
+    document.getElementById('shadow-length').addEventListener('input', (e) => {
+      shadowLength = parseFloat(e.target.value);
+      e.target.nextElementSibling.textContent = e.target.value;
+      updateShadow();
+    });
 
-            stamp.style.left = baseX + 'px';
-            stamp.style.top = baseY + 'px';
-            stamp.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+    document.getElementById('shadow-angle').addEventListener('input', (e) => {
+      shadowAngle = parseFloat(e.target.value);
+      e.target.nextElementSibling.textContent = e.target.value + '°';
+      updateShadow();
+    });
 
-            const targetGridBottom = stringToGrid(timeStr, bottomCols);
+    controls.querySelectorAll('input[type="color"]').forEach(input => {
+      input.addEventListener('input', (e) => {
+        root.style.setProperty(e.target.dataset.var, e.target.value);
+        const hex = e.target.parentElement.querySelector('.hex');
+        if (hex) hex.textContent = e.target.value;
+      });
+    });
 
-            const loadingContainer = document.createElement('div');
-            loadingContainer.className = 'stamp-loading-container';
-            loadingContainer.style.gridTemplateColumns = `repeat(${bottomCols}, 1fr)`;
+    // ==================== LEARN MORE MODAL ====================
+    const modalOverlay = document.getElementById('modal-overlay');
+    document.getElementById('learn-more').addEventListener('click', () => {
+      modalOverlay.classList.add('active');
+    });
+    document.getElementById('modal-close').addEventListener('click', () => {
+      modalOverlay.classList.remove('active');
+    });
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) modalOverlay.classList.remove('active');
+    });
+  </script>
 
-            const loadingPixels = [];
-            for (let i = 0; i < bottomCols; i++) {
-                const px = document.createElement('div');
-                px.className = 'loading-pixel';
-                loadingContainer.appendChild(px);
-                loadingPixels.push(px);
-            }
-
-            const allPixelsTop = [];
-            for (let i = 0; i < topCols * 5; i++) {
-                const px = document.createElement('div');
-                px.className = 'stamp-pixel';
-                px.style.opacity = Math.random() > 0.5 ? 1 : 0.1;
-                topGridContainer.appendChild(px);
-                allPixelsTop.push(px);
-            }
-
-            const allPixelsBottom = [];
-            for (let i = 0; i < bottomCols * 5; i++) {
-                const px = document.createElement('div');
-                px.className = 'stamp-pixel';
-                px.style.opacity = Math.random() > 0.5 ? 1 : 0.1;
-                bottomGridContainer.appendChild(px);
-                allPixelsBottom.push({ el: px, isOn: targetGridBottom[Math.floor(i / bottomCols)][i % bottomCols] === '1' });
-            }
-
-            stamp.appendChild(topGridContainer);
-            stamp.appendChild(bottomGridContainer);
-            stamp.appendChild(loadingContainer);
-            stampsContainer.appendChild(stamp);
-
-            pastStamps[pastStamps.length - 1].el = stamp;
-
-            const maxStamps = Math.max(10, activeKnocks + 1);
-            while (pastStamps.length > maxStamps) {
-                const oldest = pastStamps.shift();
-                if (oldest && oldest.el) {
-                    oldest.el.style.opacity = '0';
-                    setTimeout(() => oldest.el.remove(), 500);
-                }
-            }
-
-            // Animate pixel loading bar sequentially
-            loadingPixels.forEach((px, i) => {
-                px.style.animationDelay = `${(i / bottomCols) * 2}s`;
-            });
-
-            activeKnocks++;
-            if (!isQueueMode && !isHolding) {
-                cursor.innerText = activeKnocks > 1 ? 'queuing...' : 'knocking...';
-            }
-
-            let isResolved = false;
-            let finalTargetGridTop = [];
-
-            // Continuous Scramble Loop - runs infinitely until API resolves
-            const scrambleInterval = setInterval(() => {
-                if (!isResolved) {
-                    allPixelsTop.forEach(px => px.style.opacity = Math.random() > 0.5 ? 1 : 0.1);
-                    allPixelsBottom.forEach(p => p.el.style.opacity = Math.random() > 0.5 ? 1 : 0.1);
-                } else {
-                    clearInterval(scrambleInterval);
-                    allPixelsTop.forEach((px, i) => {
-                        px.style.opacity = finalTargetGridTop[Math.floor(i / topCols)][i % topCols] === '1' ? 1 : 0;
-                    });
-                    allPixelsBottom.forEach(p => {
-                        p.el.style.opacity = p.isOn ? 1 : 0;
-                    });
-                }
-            }, 120);
-
-            // --- REAL API LOGIC ---
-            try {
-                // 1. Send Request
-                const resp = await fetch('/api/queue-knock', { method: 'POST' });
-                const data = await resp.json();
-                const jobId = data.job_id;
-
-                // 2. Poll for Completion
-                const pollInterval = setInterval(async () => {
-                    try {
-                        const statusResp = await fetch(`/api/job-status/${jobId}`);
-                        const job = await statusResp.json();
-
-                        if (job.status === 'completed') {
-                            clearInterval(pollInterval);
-                            
-                            // Extract Unit ID (Last 4 chars of MAC address)
-                            const unitId = job.worker ? job.worker.replace(/:/g, '').slice(-4).toUpperCase() : "UKWN";
-                            
-                            finalTargetGridTop = stringToGrid(`#${unitId}`, topCols);
-                            isResolved = true;
-
-                            loadingContainer.style.opacity = '0';
-                            setTimeout(() => loadingContainer.remove(), 300);
-                            
-                            activeKnocks--;
-
-                            // Clean up oldest stamps (respecting user max logic)
-                            while (pastStamps.length > Math.max(10, activeKnocks)) {
-                                const oldest = pastStamps.shift();
-                                if (oldest && oldest.el) {
-                                    oldest.el.style.opacity = '0';
-                                    setTimeout(() => oldest.el.remove(), 500);
-                                }
-                            }
-
-                            if (!isQueueMode && !isHolding) {
-                                if (activeKnocks > 0) cursor.innerText = 'queuing...';
-                                else {
-                                    cursor.innerText = '[ KNOCK ]';
-                                    if (isTouch) cursor.style.opacity = '0';
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        clearInterval(pollInterval);
-                        throw e; // Pass to main catch
-                    }
-                }, 1000); 
-
-            } catch (error) {
-                console.error(error);
-                finalTargetGridTop = stringToGrid("ERROR", topCols);
-                isResolved = true;
-                
-                loadingContainer.style.opacity = '0';
-                setTimeout(() => loadingContainer.remove(), 300);
-                
-                activeKnocks--;
-
-                while (pastStamps.length > Math.max(10, activeKnocks)) {
-                    const oldest = pastStamps.shift();
-                    if (oldest && oldest.el) {
-                        oldest.el.style.opacity = '0';
-                        setTimeout(() => oldest.el.remove(), 500);
-                    }
-                }
-
-                if (!isQueueMode && !isHolding) {
-                    cursor.innerText = '[ ERROR ]';
-                    setTimeout(() => {
-                        if (activeKnocks === 0) {
-                            cursor.innerText = '[ KNOCK ]';
-                            if (isTouch) cursor.style.opacity = '0';
-                        }
-                    }, 2000);
-                }
-            }
-        }
-
-        window.addEventListener('pointerdown', (e) => {
-            if (e.target.id === 'learnToggle' || document.getElementById('panel').classList.contains('active')) return;
-
-            unlockAudio();
-
-            if (e.pointerType === 'mouse') {
-                if (!cursorMoved) {
-                    cursorMoved = true;
-                    cursor.style.opacity = '1';
-                    cursor.style.transform = 'translate(-50%, -50%)';
-                }
-                cursor.style.left = e.clientX + 'px';
-                cursor.style.top = e.clientY + 'px';
-            } else {
-                isTouch = true;
-                cursor.style.opacity = '1';
-                cursor.style.transform = 'translate(-50%, -110px)';
-                cursor.style.left = e.clientX + 'px';
-                cursor.style.top = e.clientY + 'px';
-            }
-
-            document.getElementById('centerInst').style.opacity = '0';
-
-            isHolding = true;
-            isQueueMode = false;
-            queuedKnocks = 1;
-            dragAccumulator = 0;
-            lastX = e.clientX;
-            lastY = e.clientY;
-
-            holdTimeout = setTimeout(() => {
-                if (isHolding) {
-                    isQueueMode = true;
-                    cursor.innerText = `x01`;
-                    if (navigator.vibrate) navigator.vibrate(15);
-                }
-            }, 300);
-        });
-
-        window.addEventListener('pointerup', (e) => {
-            if (!isHolding) return;
-            isHolding = false;
-            clearTimeout(holdTimeout);
-
-            if (isQueueMode) {
-                isQueueMode = false;
-                let countLeft = queuedKnocks;
-                function drop() {
-                    triggerKnock(e.clientX, e.clientY);
-                    countLeft--;
-                    if (countLeft > 0) setTimeout(drop, 35);
-                    else {
-                        if (activeKnocks > 0) cursor.innerText = 'queuing...';
-                        else cursor.innerText = '[ KNOCK ]';
-                    }
-                }
-                drop();
-            } else {
-                triggerKnock(e.clientX, e.clientY);
-            }
-        });
-
-        // Slide Panel Logic
-        const toggle = document.getElementById('learnToggle');
-        const close = document.getElementById('closeBtn');
-        const panel = document.getElementById('panel');
-        const backdrop = document.getElementById('backdrop');
-
-        function togglePanel() {
-            const isActive = panel.classList.contains('active');
-            const action = isActive ? 'remove' : 'add';
-            panel.classList[action]('active');
-            backdrop.classList[action]('active');
-        }
-
-        toggle.onclick = togglePanel;
-        close.onclick = togglePanel;
-        backdrop.onclick = togglePanel;
-    </script>
 </body>
-
 </html>
