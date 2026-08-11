@@ -71,7 +71,7 @@
       position: absolute;
       top: 60%;
       left: 50%;
-      transform: translate(-50%, -50%) scale(1.30);
+      transform: translate(-50%, -50%) scale(1.17);
     }
 
     #knock-btn {
@@ -198,6 +198,8 @@
       left: 50%;
       transform: translateX(-50%);
     }
+
+
 
     .terminal-bezel {
       width: 240px;
@@ -519,8 +521,8 @@
       background: #111;
       border: 1px solid rgba(255,255,255,0.06);
       border-radius: 14px;
-      padding: 32px 36px;
-      max-width: 360px;
+      padding: 24px 28px;
+      max-width: 280px;
       width: 90%;
       position: relative;
       box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
@@ -664,6 +666,8 @@
     </div>
   </div>
 
+
+
   <button class="learn-more-btn" id="learn-more">Learn More</button>
 
   <div class="modal-overlay" id="modal-overlay">
@@ -707,8 +711,9 @@
     let isKnocking = false;
 
     if (onlineCount === 0) {
-      btn.classList.add('btn-disabled');
-      btn.closest('.btn-area').classList.add('btn-disabled');
+      btn.closest('.btn-area').style.display = 'none';
+      document.querySelector('.screen-area').style.top = '50%';
+      document.querySelector('.screen-area').style.transform = 'translate(-50%, -50%)';
     }
 
     btn.addEventListener('click', async () => {
@@ -903,6 +908,30 @@
     });
     modalOverlay.addEventListener('click', (e) => {
       if (e.target === modalOverlay) modalOverlay.classList.remove('active');
+    });
+    // ==================== PULL TO REFRESH ====================
+    let pullStartY = 0;
+    let pulling = false;
+    const threshold = 80;
+
+    document.addEventListener('touchstart', (e) => {
+      if (window.scrollY === 0) {
+        pullStartY = e.touches[0].clientY;
+        pulling = true;
+      }
+    });
+
+    document.addEventListener('touchmove', (e) => {
+      if (!pulling) return;
+      const dy = e.touches[0].clientY - pullStartY;
+      if (dy > threshold) {
+        pulling = false;
+        location.reload();
+      }
+    });
+
+    document.addEventListener('touchend', () => {
+      pulling = false;
     });
   </script>
 
