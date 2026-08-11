@@ -723,6 +723,55 @@
 
     const onlineCount = parseInt('{{ online_count }}') || 0;
     let isKnocking = false;
+    let demoMode = false;
+    let demoCount = 5;
+
+    // Demo mode badge
+    const demoBadge = document.createElement('div');
+    demoBadge.textContent = 'DEMO MODE';
+    demoBadge.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#000;color:#fff;font-family:system-ui;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;z-index:999;display:none;letter-spacing:0.5px;transition:opacity 0.5s;opacity:0';
+    document.body.appendChild(demoBadge);
+
+    function flashBadge(text) {
+      demoBadge.textContent = text;
+      demoBadge.style.display = 'block';
+      demoBadge.style.opacity = '1';
+      setTimeout(() => { demoBadge.style.opacity = '0'; }, 2000);
+      setTimeout(() => { demoBadge.style.display = 'none'; }, 2500);
+    }
+
+    // Double tap to toggle demo mode
+    let lastTap = 0;
+    function toggleDemo() {
+      demoMode = !demoMode;
+      flashBadge(demoMode ? 'DEMO ON' : 'DEMO OFF');
+      if (demoMode && onlineCount === 0) {
+        btn.closest('.btn-area').style.display = '';
+        document.querySelector('.screen-area').style.top = '15%';
+        document.querySelector('.screen-area').style.transform = 'translateX(-50%)';
+        showOnline();
+      } else if (!demoMode && onlineCount === 0) {
+        btn.closest('.btn-area').style.display = 'none';
+        document.querySelector('.screen-area').style.top = '50%';
+        document.querySelector('.screen-area').style.transform = 'translate(-50%, -50%)';
+        showOnline();
+      } else {
+        showOnline();
+      }
+    }
+
+    document.addEventListener('touchend', (e) => {
+      const now = Date.now();
+      if (now - lastTap < 300) {
+        e.preventDefault();
+        toggleDemo();
+      }
+      lastTap = now;
+    });
+
+    document.body.addEventListener('dblclick', (e) => {
+      if (e.target === document.body) toggleDemo();
+    });
 
     if (onlineCount === 0) {
       btn.closest('.btn-area').style.display = 'none';
@@ -731,7 +780,8 @@
     }
 
     btn.addEventListener('click', async () => {
-      if (isKnocking || onlineCount === 0) return;
+      if (isKnocking) return;
+      if (!demoMode && onlineCount === 0) return;
       if (navigator.vibrate) navigator.vibrate(50);
       isKnocking = true;
       btn.classList.add('pressed');
@@ -743,6 +793,33 @@
       void termFill.offsetHeight;
       termFill.style.transition = 'width 2s linear';
       termFill.style.width = '90%';
+
+      if (demoMode) {
+        // Simulated demo knock
+        setTimeout(() => {
+          setLine('KNOCKING...');
+        }, 800);
+
+        setTimeout(() => {
+          termFill.style.transition = 'width 0.3s linear';
+          termFill.style.width = '100%';
+          const unitId = String(Math.floor(Math.random() * 9000) + 1000);
+          setTimeout(() => {
+            const line = document.createElement('div');
+            line.className = 'line';
+            line.innerHTML = '<span style="font-size:1.6em;line-height:1;vertical-align:middle">\u2714</span> UNIT ' + unitId;
+            terminal.appendChild(line);
+            while (terminal.children.length > 2) terminal.removeChild(terminal.firstChild);
+            btn.classList.remove('pressed');
+          }, 300);
+          setTimeout(() => {
+            clearAnim();
+            showOnline();
+            isKnocking = false;
+          }, 2000);
+        }, 2200);
+        return;
+      }
 
       try {
         const response = await fetch('/api/queue-knock', { method: 'POST' });
@@ -802,13 +879,24 @@
     function showOnline() {
       const line = document.createElement('div');
       line.className = 'line';
-      if (onlineCount > 0) {
-        line.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;min-width:22px;border-radius:50%;background:#fff;color:#000;font-size:12px;font-weight:700;margin-right:6px;font-family:system-ui;animation:sharpBlink 1s step-end infinite">' + onlineCount + '</span> KNOCKERS ONLINE';
+      const count = demoMode ? demoCount : onlineCount;
+      if (count > 0) {
+        line.innerHTML = '<span class="knocker-count" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;min-width:22px;border-radius:50%;background:#fff;color:#000;font-size:12px;font-weight:700;margin-right:6px;font-family:system-ui;animation:sharpBlink 1s step-end infinite;cursor:pointer">' + count + '</span> KNOCKERS ONLINE';
       } else {
-        line.innerHTML = 'ALL KNOCKERS OFFLINE <span style="font-size:1.6em;color:#ff3333;vertical-align:middle;font-family:system-ui">\u2715</span>';
+        line.innerHTML = 'ALL KNOCKERS OFFLINE <span style="font-size:1.3em;color:#ff3333;vertical-align:middle;font-family:system-ui">\u2715</span>';
       }
       terminal.appendChild(line);
       while (terminal.children.length > 2) terminal.removeChild(terminal.firstChild);
+
+      // Make badge clickable in demo mode
+      const badge = line.querySelector('.knocker-count');
+      if (badge && demoMode) {
+        badge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          demoCount = (demoCount % 9) + 1;
+          badge.textContent = demoCount;
+        });
+      }
     }
 
     // ==================== COLOR CONTROLS ====================
