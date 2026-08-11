@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Knock On Wood</title>
+  <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='icon.jpeg') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon.jpeg') }}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Knocker">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Silkscreen&display=swap" rel="stylesheet" />
   <style>
     :root {
@@ -727,7 +733,7 @@
       // Start smooth fill
       setLine('SENDING KNOCK...');
       void termFill.offsetHeight;
-      termFill.style.transition = 'width 3s linear';
+      termFill.style.transition = 'width 2s linear';
       termFill.style.width = '90%';
 
       try {
