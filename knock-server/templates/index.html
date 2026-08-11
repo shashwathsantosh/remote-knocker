@@ -730,52 +730,21 @@
       document.querySelector('.screen-area').style.transform = 'translate(-50%, -50%)';
     }
 
-    // ==================== BURST MODE ====================
-    let burstCount = 0;
-    let burstInterval = null;
-    let isHolding = false;
-
-    function startBurst() {
-      if (isKnocking || onlineCount === 0 || isHolding) return;
-      isHolding = true;
-      burstCount = 0;
+    btn.addEventListener('click', async () => {
+      if (isKnocking || onlineCount === 0) return;
+      if (navigator.vibrate) navigator.vibrate(50);
+      isKnocking = true;
       btn.classList.add('pressed');
+      knockCount++;
       clearAnim();
 
-      burstInterval = setInterval(() => {
-        burstCount++;
-        if (navigator.vibrate) navigator.vibrate(30);
-        setLine('x ' + burstCount);
-      }, 200);
-    }
-
-    async function releaseBurst() {
-      if (!isHolding) return;
-      isHolding = false;
-      clearInterval(burstInterval);
-      
-      if (burstCount === 0) {
-        btn.classList.remove('pressed');
-        return;
-      }
-
-      const total = burstCount;
-      isKnocking = true;
-      knockCount += total;
-
       // Start smooth fill
-      setLine('SENDING ' + total + ' KNOCK' + (total > 1 ? 'S' : '') + '...');
+      setLine('SENDING KNOCK...');
       void termFill.offsetHeight;
       termFill.style.transition = 'width 2s linear';
       termFill.style.width = '90%';
 
       try {
-        // Send all knocks
-        for (let i = 0; i < total; i++) {
-          fetch('/api/queue-knock', { method: 'POST' });
-        }
-
-        // Poll last one for status
         const response = await fetch('/api/queue-knock', { method: 'POST' });
         const data = await response.json();
         const jobId = data.job_id;
@@ -789,7 +758,7 @@
 
             if (job.status === 'assigned' && !assignedShown) {
               assignedShown = true;
-              setLine('KNOCKING × ' + total + '...');
+              setLine('KNOCKING...');
             }
             else if (job.status === 'completed') {
               clearInterval(pollInterval);
@@ -801,7 +770,7 @@
               setTimeout(() => {
                 const line = document.createElement('div');
                 line.className = 'line';
-                line.innerHTML = '<span style="font-size:1.6em;line-height:1;vertical-align:middle">\u2714</span> ' + total + '× UNIT ' + unitId;
+                line.innerHTML = '<span style="font-size:1.6em;line-height:1;vertical-align:middle">\u2714</span> UNIT ' + unitId;
                 terminal.appendChild(line);
                 while (terminal.children.length > 2) terminal.removeChild(terminal.firstChild);
                 btn.classList.remove('pressed');
@@ -828,17 +797,7 @@
         btn.classList.remove('pressed');
         isKnocking = false;
       }
-    }
-
-    // Touch events
-    btn.addEventListener('touchstart', (e) => { e.preventDefault(); startBurst(); });
-    btn.addEventListener('touchend', releaseBurst);
-    btn.addEventListener('touchcancel', releaseBurst);
-
-    // Mouse events (for desktop testing)
-    btn.addEventListener('mousedown', startBurst);
-    btn.addEventListener('mouseup', releaseBurst);
-    btn.addEventListener('mouseleave', releaseBurst);
+    });
 
     function showOnline() {
       const line = document.createElement('div');
