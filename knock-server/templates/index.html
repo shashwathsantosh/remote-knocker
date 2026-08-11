@@ -527,7 +527,7 @@
       background: #111;
       border: 1px solid rgba(255,255,255,0.06);
       border-radius: 14px;
-      padding: 24px 28px;
+      padding: 48px 28px 24px;
       max-width: 280px;
       width: 90%;
       position: relative;
@@ -570,17 +570,25 @@
     .modal-close {
       all: unset;
       position: absolute;
-      top: 16px;
-      right: 16px;
+      top: 12px;
+      right: 12px;
       cursor: pointer;
-      font-size: 14px;
-      color: rgba(255,255,255,0.5);
-      transition: color 0.2s;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      transition: all 0.2s;
       line-height: 1;
       z-index: 1;
     }
     .modal-close:hover {
-      color: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.15);
+      color: #fff;
     }
 
   </style>
