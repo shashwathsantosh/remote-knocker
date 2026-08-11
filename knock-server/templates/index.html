@@ -727,7 +727,7 @@
       // Start smooth fill
       setLine('SENDING KNOCK...');
       void termFill.offsetHeight;
-      termFill.style.transition = 'width 8s linear';
+      termFill.style.transition = 'width 3s linear';
       termFill.style.width = '90%';
 
       try {
@@ -748,7 +748,7 @@
             }
             else if (job.status === 'completed') {
               clearInterval(pollInterval);
-              termFill.style.transition = 'width 0.3s ease';
+              termFill.style.transition = 'width 0.3s linear';
               termFill.style.width = '100%';
 
               const unitId = job.worker ? job.worker.replace(/:/g, '').slice(-4).toUpperCase() : '??';
